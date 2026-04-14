@@ -2,8 +2,8 @@
  * Hero Section — full-viewport with animated logo, tagline, CTA
  * [AV-037] new: v5.2.0 UI overhaul
  *
- * Logo: uses /images/logo.svg if available, falls back to text.
- * Replace logo by swapping the file in public/images/logo.svg.
+ * Logo: uses /images/logo-home.png if available, falls back to text.
+ * Replace logo by swapping the file in public/images/logo-home.png.
  * To remove: delete this file, remove from home page.
  */
 'use client';
@@ -18,9 +18,9 @@ export default function HeroSection({ onShopClick }) {
       {/* Content */}
       <div className="relative z-10 text-center px-10">
         <div className="animate-hero">
-          {/* Logo — swap public/images/logo.svg to replace */}
-          <img src="/images/logo.svg" alt="ANTIVAXXER"
-               className="mx-auto max-w-[400px] w-full"
+          {/* Logo — swap public/images/logo-home.png to replace */}
+          <img src="/images/logo-home.png" alt="ANTIVAXXER"
+               className="mx-auto max-w-[420px] w-full object-contain"
                onError={(e) => {
                  e.target.style.display = 'none';
                  e.target.nextSibling.style.display = 'block';

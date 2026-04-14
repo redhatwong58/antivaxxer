@@ -7,9 +7,12 @@ export default function LookbookSection() {
   return (
     <section className="grid grid-cols-1 md:grid-cols-2 min-h-[600px]">
       <div className="min-h-[400px] md:min-h-[600px] bg-av-gunmetal flex items-center justify-center relative overflow-hidden">
-        <span className="font-heading text-[120px] tracking-[8px] opacity-[0.06] absolute whitespace-nowrap">
-          ANTIVAXXER
-        </span>
+        <img
+          src="/images/logo-home.png"
+          alt=""
+          aria-hidden="true"
+          className="absolute w-[86%] max-w-[520px] opacity-[0.8] pointer-events-none select-none"
+        />
         <div className="w-20 h-20 border border-av-bone-dim relative flex items-center justify-center">
           <div className="absolute w-px h-10 bg-av-bone-dim" />
           <div className="absolute w-10 h-px bg-av-bone-dim" />

@@ -7,7 +7,7 @@
  * Backdrop blur on scroll. Search + User + Cart icons.
  * Mobile hamburger menu.
  *
- * Logo: uses /images/logo-nav.svg if available, else styled text.
+ * Logo: uses /images/logo-home.png if available, else styled text.
  */
 
 'use client';
@@ -32,9 +32,9 @@ export default function Header() {
   return (
     <div className="sticky top-0 z-[99] bg-av-black/95 border-b border-av-bone-faint backdrop-blur-[20px]">
       <nav className="max-w-[1400px] mx-auto flex items-center justify-between px-6 md:px-10 py-4">
-        {/* Logo — replace public/images/logo-nav.svg for custom artwork */}
+        {/* Logo — replace public/images/logo-home.png for custom artwork */}
         <Link href="/" className="hover:opacity-80 transition-opacity">
-          <img src="/images/logo-nav.svg" alt="ANTIVAXXER" className="h-8 w-auto"
+          <img src="/images/logo-home.png" alt="ANTIVAXXER" className="h-12 md:h-14 w-auto object-contain"
             onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
           <span className="font-heading text-[26px] tracking-[4px]" style={{ display: 'none' }}>
             ANTIVA<span className="text-av-red">X</span>XER
