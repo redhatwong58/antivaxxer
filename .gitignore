@@ -44,3 +44,7 @@ api/prisma/*.db-journal
 # Uploaded files (local dev)
 uploads/
 tmp/
+
+# Local Python tooling (image handling)
+.venv/
+frontend/public/images/logo-home-original.png

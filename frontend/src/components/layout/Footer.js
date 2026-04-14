@@ -10,9 +10,11 @@ export default function Footer() {
       <div className="max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-16 mb-16">
         {/* Brand */}
         <div>
-          <div className="font-heading text-[28px] tracking-[4px] mb-4">
-            ANTIVA<span className="text-av-red">X</span>XER
-          </div>
+          <img
+            src="/images/logo-home.png"
+            alt="ANTIVAXXER"
+            className="h-8 md:h-9 w-auto object-contain mb-4"
+          />
           <p className="font-light text-sm text-av-bone-muted leading-[1.8] max-w-[300px]">
             Premium streetwear for the health freedom movement. Quality blanks. Bold statements.
             Question everything.

@@ -38,24 +38,20 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Install API dependencies
-        working-directory: api
-        run: npm ci
-
-      - name: Install frontend dependencies
-        working-directory: frontend
+      # Single install for workspaces (lockfile is at repo root). Per-package `npm ci`
+      # skips hoisted devDependencies and causes `npx prisma` to fetch Prisma 7+.
+      - name: Install dependencies
         run: npm ci
 
       - name: Generate Prisma client
-        working-directory: api
-        run: npx prisma generate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npm run db:generate --workspace=api
 
       - name: Validate Prisma schema
-        working-directory: api
-        run: npx prisma validate
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+        run: npm exec --workspace=api -- prisma validate
 
       - name: JS syntax check (all files)
         run: |

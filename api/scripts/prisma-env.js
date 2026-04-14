@@ -15,11 +15,20 @@ if (args.length === 0) {
 }
 
 const apiRoot = path.join(__dirname, '..');
-const result = spawnSync('npx', ['prisma', ...args], {
+let prismaCli;
+try {
+  prismaCli = require.resolve('prisma/build/index.js', { paths: [apiRoot] });
+} catch {
+  console.error(
+    '[prisma-env] Could not resolve local `prisma` CLI. From repo root run: npm install',
+  );
+  process.exit(1);
+}
+
+const result = spawnSync(process.execPath, [prismaCli, ...args], {
   cwd: apiRoot,
   stdio: 'inherit',
   env: process.env,
-  shell: true,
 });
 
 process.exit(result.status === null ? 1 : result.status);
