@@ -4,23 +4,56 @@
  * Primary click: navigates to /shop/{slug}. Quick Add overlay: opens modal.
  */
 'use client';
+import { useMemo } from 'react';
 import Link from 'next/link';
+
+const categoryImageFallbacks = {
+  hoodies: '/images/products/categories/hoodies.jpg',
+  tees: '/images/products/categories/tees.jpg',
+  beanies: '/images/products/categories/beanies.jpg',
+  jackets: '/images/products/categories/jackets.jpg',
+  default: '/images/logo-home.png',
+};
+
+function getCategoryFallbackImage(category) {
+  const slug = category?.slug || '';
+  const name = (category?.name || '').toLowerCase();
+
+  if (slug.includes('hoodie') || name.includes('hoodie')) return categoryImageFallbacks.hoodies;
+  if (slug.includes('tee') || name.includes('tee')) return categoryImageFallbacks.tees;
+  if (slug.includes('beanie') || name.includes('beanie')) return categoryImageFallbacks.beanies;
+  if (slug.includes('jacket') || name.includes('jacket')) return categoryImageFallbacks.jackets;
+
+  return categoryImageFallbacks.default;
+}
+
 export default function ProductCard({ product, onQuickView }) {
-  const { name, slug, basePrice, badge, variantLabel, colors, primaryImage } = product;
+  const { name, slug, basePrice, badge, variantLabel, category, primaryImage } = product;
+  const categoryFallback = useMemo(() => getCategoryFallbackImage(category), [category]);
+  const imageSrc = primaryImage?.url || categoryFallback;
+
   return (
     <div className="group relative">
       <Link href={`/shop/${slug}`} className="block cursor-pointer"
         aria-label={`View ${name}, $${basePrice}`}>
         {/* Image */}
         <div className="relative aspect-square bg-av-gunmetal overflow-hidden">
-          {primaryImage ? (
-            <img src={primaryImage.url} alt={primaryImage.altText || name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="font-heading text-2xl tracking-widest text-av-bone-dim">AV</span>
-            </div>
-          )}
+          <img
+            src={imageSrc}
+            alt={primaryImage?.altText || `${name} — ${category?.name || 'Product'}`}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+            onError={(e) => {
+              if (e.currentTarget.src.endsWith(categoryImageFallbacks.default)) {
+                return;
+              }
+              if (e.currentTarget.src.endsWith(categoryFallback)) {
+                e.currentTarget.src = categoryImageFallbacks.default;
+                return;
+              }
+              e.currentTarget.src = categoryFallback;
+            }}
+          />
           {badge && (
             <span className="absolute top-4 left-4 bg-av-red text-av-bone font-heading
                              text-[11px] tracking-[2px] px-3 py-1 z-[2]">{badge}</span>
