@@ -1,0 +1,78 @@
+# AWS App Runner Configuration — ANTIVAXXER API
+#
+# [AV-042] feat: AWS App Runner deployment configuration
+#
+# This file lives at the repo root. App Runner is configured with
+# source-directory=api in the console (or via CLI), so all paths in the
+# build section are relative to /api.
+#
+# Environment variables: Most come from AWS Secrets Manager. The runtime
+# secrets section below tells App Runner which secrets to inject as env vars.
+# Update the ARN values to match your AWS account before first deploy.
+#
+# Health check: /api/health (configured in App Runner console, not here).
+#   Interval: 10 seconds
+#   Timeout: 5 seconds
+#   Healthy threshold: 1
+#   Unhealthy threshold: 3
+#
+# Migrations: prisma migrate deploy runs as part of the build phase.
+# If migrations fail, the build fails and the deployment is aborted.
+# The previous version stays running until a successful build replaces it.
+#
+# To rollback: revert this file or delete it and configure manually in console.
+
+version: 1.0
+runtime: nodejs18
+build:
+  commands:
+    build:
+      - echo "Node version:"
+      - node --version
+      - echo "Installing production dependencies..."
+      - cd api && npm ci --omit=dev
+      - echo "Generating Prisma client..."
+      - npx prisma generate
+      - echo "Running database migrations..."
+      - node scripts/run-migrations.js
+run:
+  runtime-version: 18
+  command: cd api && node src/index.js
+  network:
+    port: 4000
+    env: API_PORT
+  env:
+    - name: NODE_ENV
+      value: production
+    - name: API_PORT
+      value: "4000"
+    # Inventory thresholds (non-sensitive — Parameter Store or plain env)
+    - name: INVENTORY_WARNING_THRESHOLD
+      value: "15"
+    - name: INVENTORY_REORDER_THRESHOLD
+      value: "5"
+    - name: ABANDONED_CART_DELAY_MS
+      value: "3600000"
+  # Secrets injected from AWS Secrets Manager.
+  # Replace ARNs with your actual secret ARNs after creating them.
+  # The IAM role attached to App Runner needs secretsmanager:GetSecretValue
+  # on each of these specific ARNs.
+  secrets:
+    - name: DATABASE_URL
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/database-url"
+    - name: NEXTAUTH_SECRET
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/nextauth-secret"
+    - name: STRIPE_SECRET_KEY
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/stripe-secret-key"
+    - name: STRIPE_WEBHOOK_SECRET
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/stripe-webhook-secret"
+    - name: CRON_TOKEN
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/cron-token"
+    - name: SES_FROM_EMAIL
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/ses-from-email"
+    - name: S3_BUCKET_NAME
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/s3-bucket-name"
+    - name: CLOUDFRONT_DOMAIN
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/cloudfront-domain"
+    - name: INVENTORY_ALERT_EMAIL
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/inventory-alert-email"

@@ -1,0 +1,22 @@
+# Don't ship these into the Docker image
+node_modules
+npm-debug.log
+.env
+.env.local
+.env.*.local
+.git
+.gitignore
+.dockerignore
+Dockerfile
+*.md
+README*
+.vscode
+.idea
+coverage
+.nyc_output
+test
+tests
+__tests__
+*.test.js
+*.spec.js
+.DS_Store

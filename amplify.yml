@@ -1,0 +1,43 @@
+# AWS Amplify Build Specification — ANTIVAXXER Frontend
+#
+# [AV-042] feat: AWS Amplify deployment configuration
+#
+# Monorepo setup: this file lives at the repo root.
+# Amplify is configured with appRoot=frontend in the console, so
+# all paths in the frontend section are relative to /frontend.
+#
+# Environment variables are sourced from:
+#   - Plain text vars: Amplify Console → App settings → Environment variables
+#   - Secrets: Amplify Console references AWS Secrets Manager via SSM
+#     Required secrets:
+#       - antivaxxer/prod/nextauth-secret  → NEXTAUTH_SECRET
+#       - antivaxxer/prod/stripe-publishable-key → NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+#
+# To rollback: delete this file. Amplify will fall back to auto-detected
+# Next.js settings, which work but lose Prisma generation.
+
+version: 1
+applications:
+  - appRoot: frontend
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - echo "Node version:"
+            - node --version
+            - echo "Installing dependencies..."
+            - npm ci
+            - echo "Generating Prisma client (frontend imports types)..."
+            - cd ../api && npx prisma generate && cd ../frontend
+        build:
+          commands:
+            - echo "Building Next.js production bundle..."
+            - npm run build
+      artifacts:
+        baseDirectory: .next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+          - .next/cache/**/*

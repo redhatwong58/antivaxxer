@@ -1,0 +1,321 @@
+// ============================================================
+// ANTIVAXXER — Prisma Schema
+// ============================================================
+// [AV-001] feat: prisma schema and initial migration
+//
+// Database: PostgreSQL via AWS RDS
+// ORM: Prisma 5.x
+//
+// Phase 1 models: Product, Category, Color, Size, Variant, ProductImage
+// Phase 2 adds: Cart, CartItem, Order, OrderItem, PromoCode
+// Phase 3 adds: User, Address, Wishlist
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== CATEGORIES =====
+// Product groupings: tees, long-sleeve, crewneck, hoodie, hat, collab, accessories
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @db.VarChar(100)
+  slug      String    @unique @db.VarChar(100)
+  sortOrder Int       @default(0) @map("sort_order")
+  isActive  Boolean   @default(true) @map("is_active")
+  createdAt DateTime  @default(now()) @map("created_at")
+  products  Product[]
+
+  @@map("categories")
+}
+
+// ===== COLORS =====
+// Shared color palette across products (Black, Pepper, Blue Jean, etc.)
+model Color {
+  id        String         @id @default(uuid())
+  name      String         @db.VarChar(50)
+  hexCode   String         @map("hex_code") @db.VarChar(7)
+  sortOrder Int            @default(0) @map("sort_order")
+  products  ProductColor[]
+  variants  Variant[]
+  images    ProductImage[]
+
+  @@map("colors")
+}
+
+// ===== SIZES =====
+// Shared size definitions (S, M, L, XL, 2XL, 3XL, OS)
+model Size {
+  id        String        @id @default(uuid())
+  name      String        @db.VarChar(10)
+  sortOrder Int           @default(0) @map("sort_order")
+  products  ProductSize[]
+  variants  Variant[]
+
+  @@map("sizes")
+}
+
+// ===== PRODUCTS =====
+// The main product entity (Classic Logo Tee, Carhartt Hoodie, etc.)
+// Each product has multiple variants (color x size combinations)
+model Product {
+  id           String   @id @default(uuid())
+  name         String   @db.VarChar(255)
+  slug         String   @unique @db.VarChar(255)
+  categoryId   String   @map("category_id")
+  basePrice    Decimal  @map("base_price") @db.Decimal(10, 2)
+  comparePrice Decimal? @map("compare_price") @db.Decimal(10, 2)
+  description  String?  @db.Text
+  variantLabel String?  @map("variant_label") @db.VarChar(200)
+  badge        String?  @db.VarChar(50)
+  status       String   @default("active") @db.VarChar(20)
+  featured     Boolean  @default(false)
+  sortOrder    Int      @default(0) @map("sort_order")
+  seoTitle     String?  @map("seo_title") @db.VarChar(255)
+  seoDesc      String?  @map("seo_desc") @db.VarChar(500)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  category Category       @relation(fields: [categoryId], references: [id])
+  colors   ProductColor[]
+  sizes    ProductSize[]
+  variants Variant[]
+  images   ProductImage[]
+  Wishlist Wishlist[]
+
+  @@map("products")
+}
+
+// ===== PRODUCT <> COLOR (junction) =====
+// Which colors a product offers
+model ProductColor {
+  productId String  @map("product_id")
+  colorId   String  @map("color_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color     Color   @relation(fields: [colorId], references: [id])
+
+  @@id([productId, colorId])
+  @@map("product_colors")
+}
+
+// ===== PRODUCT <> SIZE (junction) =====
+// Which sizes a product offers
+model ProductSize {
+  productId String  @map("product_id")
+  sizeId    String  @map("size_id")
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size      Size    @relation(fields: [sizeId], references: [id])
+
+  @@id([productId, sizeId])
+  @@map("product_sizes")
+}
+
+// ===== VARIANTS =====
+// The actual purchasable SKU: product x color x size
+// Example: Classic Logo Tee x Black x Large = SKU "AV-TEE-BLK-L"
+//
+// This is what gets added to cart, what has stock tracking,
+// and what appears as a line item on an order.
+model Variant {
+  id                String   @id @default(uuid())
+  productId         String   @map("product_id")
+  colorId           String?  @map("color_id")
+  sizeId            String?  @map("size_id")
+  sku               String   @unique @db.VarChar(50)
+  priceOverride     Decimal? @map("price_override") @db.Decimal(10, 2)
+  stockQty          Int      @default(0) @map("stock_qty")
+  lowStockThreshold Int      @default(5) @map("low_stock_threshold")
+  weightOz          Decimal? @map("weight_oz") @db.Decimal(6, 2)
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color      Color?      @relation(fields: [colorId], references: [id])
+  size       Size?       @relation(fields: [sizeId], references: [id])
+  orderItems OrderItem[]
+
+  // One variant per product x color x size combo
+  @@unique([productId, colorId, sizeId])
+  @@map("variants")
+}
+
+// ===== PRODUCT IMAGES =====
+// Images per product, optionally per color.
+// When colorId is null, image applies to all colors (default/hero shot).
+// When colorId is set, image shows when that color is selected.
+model ProductImage {
+  id        String  @id @default(uuid())
+  productId String  @map("product_id")
+  colorId   String? @map("color_id")
+  url       String  @db.VarChar(500)
+  altText   String? @map("alt_text") @db.VarChar(255)
+  sortOrder Int     @default(0) @map("sort_order")
+  isPrimary Boolean @default(false) @map("is_primary")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  color   Color?  @relation(fields: [colorId], references: [id])
+
+  @@map("product_images")
+}
+
+// ============================================================
+// PHASE 2: ORDERS
+// [AV-010] feat: order data model
+// ============================================================
+
+// ===== ORDERS =====
+// Created on successful Stripe payment via webhook.
+// Addresses stored as JSON snapshots (frozen at time of purchase).
+model Order {
+  id                    String    @id @default(uuid())
+  orderNumber           String    @unique @map("order_number") @db.VarChar(20)
+  email                 String    @db.VarChar(255)
+  status                String    @default("pending") @db.VarChar(30)
+  subtotal              Decimal   @db.Decimal(10, 2)
+  discountAmount        Decimal   @default(0) @map("discount_amount") @db.Decimal(10, 2)
+  promoCode             String?   @map("promo_code") @db.VarChar(50)
+  shippingAmount        Decimal   @default(0) @map("shipping_amount") @db.Decimal(10, 2)
+  shippingMethod        String?   @map("shipping_method") @db.VarChar(50)
+  taxAmount             Decimal   @default(0) @map("tax_amount") @db.Decimal(10, 2)
+  total                 Decimal   @db.Decimal(10, 2)
+  stripePaymentIntentId String?   @unique @map("stripe_payment_intent_id") @db.VarChar(100)
+  shippingAddress       Json?     @map("shipping_address")
+  billingAddress        Json?     @map("billing_address")
+  trackingNumber        String?   @map("tracking_number") @db.VarChar(100)
+  trackingUrl           String?   @map("tracking_url") @db.VarChar(500)
+  shippedAt             DateTime? @map("shipped_at")
+  deliveredAt           DateTime? @map("delivered_at")
+  notes                 String?   @db.Text
+  userId                String?   @map("user_id")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  items OrderItem[]
+  user  User?       @relation(fields: [userId], references: [id])
+
+  @@map("orders")
+}
+
+// ===== ORDER ITEMS =====
+// Line items on an order. All fields are snapshots — they preserve
+// the product data at the moment of purchase so orders remain accurate
+// even if products are later renamed, repriced, or deleted.
+model OrderItem {
+  id          String  @id @default(uuid())
+  orderId     String  @map("order_id")
+  variantId   String  @map("variant_id")
+  productName String  @map("product_name") @db.VarChar(255)
+  colorName   String? @map("color_name") @db.VarChar(50)
+  sizeName    String? @map("size_name") @db.VarChar(10)
+  sku         String  @db.VarChar(50)
+  quantity    Int
+  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
+  imageUrl    String? @map("image_url") @db.VarChar(500)
+
+  // Relations
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant Variant @relation(fields: [variantId], references: [id])
+
+  @@map("order_items")
+}
+
+// ============================================================
+// PHASE 3: USER ACCOUNTS
+// [AV-016] feat: user accounts with NextAuth.js
+// ============================================================
+
+// ===== USERS =====
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  name         String   @db.VarChar(100)
+  role         String   @default("customer") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  orders   Order[]
+  Wishlist Wishlist[]
+
+  @@map("users")
+}
+
+// ============================================================
+// PHASE 3: PROMO ENGINE
+// [AV-020] feat: promo code engine
+// ============================================================
+
+model PromoCode {
+  id             String    @id @default(uuid())
+  code           String    @unique @db.VarChar(50)
+  type           String    @db.VarChar(20) // percentage | fixed_amount | free_shipping
+  value          Decimal   @db.Decimal(10, 2) // percent (25.00) or dollar amount (10.00)
+  minOrderAmount Decimal?  @map("min_order_amount") @db.Decimal(10, 2)
+  maxUses        Int?      @map("max_uses") // null = unlimited
+  usedCount      Int       @default(0) @map("used_count")
+  maxUsesPerUser Int?      @map("max_uses_per_user") // null = unlimited
+  startsAt       DateTime? @map("starts_at")
+  expiresAt      DateTime? @map("expires_at")
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  usages PromoUsage[]
+
+  @@map("promo_codes")
+}
+
+model PromoUsage {
+  id          String   @id @default(uuid())
+  promoCodeId String   @map("promo_code_id")
+  userId      String?  @map("user_id")
+  orderId     String?  @map("order_id")
+  usedAt      DateTime @default(now()) @map("used_at")
+
+  // Relations
+  promoCode PromoCode @relation(fields: [promoCodeId], references: [id])
+
+  @@map("promo_usages")
+}
+
+// ============================================================
+// PHASE 5: WISHLIST + ABANDONED CART
+// ============================================================
+
+model Wishlist {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  productId String   @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@map("wishlists")
+}
+
+model AbandonedCart {
+  id            String    @id @default(uuid())
+  email         String    @db.VarChar(255)
+  cartData      Json      @map("cart_data")
+  recoveryToken String    @unique @map("recovery_token") @db.VarChar(64)
+  recovered     Boolean   @default(false)
+  emailSentAt   DateTime? @map("email_sent_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@map("abandoned_carts")
+}

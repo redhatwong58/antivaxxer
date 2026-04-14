@@ -1,0 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * ANTIVAXXER — Global Styles
+ * [AV-037] Updated: v5.2.0 UI overhaul to match v9 mock
+ */
+
+@layer base {
+  body {
+    @apply bg-av-black text-av-bone antialiased;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 200;
+    line-height: 1.6;
+  }
+  html { scroll-behavior: smooth; }
+  ::selection { @apply bg-av-red text-av-bone; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0B0B0B; }
+  ::-webkit-scrollbar-thumb { background: #2C2F33; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #6A0E0E; }
+  .skip-to-content {
+    @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4
+           focus:z-50 focus:bg-av-red focus:text-white focus:px-4 focus:py-2
+           focus:text-sm focus:font-bold focus:tracking-wider;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes heroReveal { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+@keyframes marquee { 0% { transform:translateX(0); } 100% { transform:translateX(-50%); } }
+@keyframes scrollPulse { 0% { top:-60px; } 100% { top:60px; } }
+@keyframes toastSlide { from { transform:translateX(120%); } to { transform:translateX(0); } }
+
+.animate-hero { opacity:0; animation:heroReveal 1.2s ease forwards 0.3s; }
+.animate-fade-1 { opacity:0; animation:fadeIn 0.8s ease forwards 1s; }
+.animate-fade-2 { opacity:0; animation:fadeIn 0.8s ease forwards 1.3s; }
+.animate-fade-3 { opacity:0; animation:fadeIn 0.8s ease forwards 1.8s; }
+.animate-marquee { animation:marquee 30s linear infinite; }
+.animate-toast { animation:toastSlide 0.4s ease; }
+
+.btn-fill { position:relative; overflow:hidden; z-index:1; }
+.btn-fill::before { content:''; position:absolute; top:0; left:-100%; width:100%; height:100%; background:#6A0E0E; transition:left 0.4s; z-index:-1; }
+.btn-fill:hover::before { left:0; }
+.btn-fill:hover { border-color:#6A0E0E; }
+.nav-underline { position:relative; }
+.nav-underline::after { content:''; position:absolute; bottom:-4px; left:0; width:0; height:1px; background:#6A0E0E; transition:width 0.3s; }
+.nav-underline:hover::after { width:100%; }
