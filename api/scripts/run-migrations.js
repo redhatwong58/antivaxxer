@@ -8,7 +8,7 @@
  *   - App Runner build phase (apprunner.yaml)
  *   - Dockerfile build (optional, can also run at runtime)
  *   - GitHub Actions PR validation
- *   - Manual: `node scripts/run-migrations.js` (loads root `.env` + `api/.env` via `loadEnv.js`)
+ *   - Manual: `node scripts/run-migrations.js`
  *
  * Behavior:
  *   - Runs `prisma migrate deploy` (forward-only, idempotent)
@@ -23,8 +23,6 @@
  *   - Provides clear exit codes for CI/CD
  *   - Can be extended with pre-migration backups, schema validation, etc.
  */
-
-require('../loadEnv');
 
 const { execSync } = require('child_process');
 

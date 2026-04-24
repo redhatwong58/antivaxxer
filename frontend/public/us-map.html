@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>US Organization Map - Edgy Badass</title>
+<title>United States Medical Liberty Map</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
 <style>
@@ -93,16 +93,17 @@
     stroke-width:0.6;
     cursor:pointer;
     transition:fill 0.2s, stroke 0.2s;
+    vector-effect:non-scaling-stroke;
   }
   .state-path:hover {
     fill:var(--state-hover);
     stroke:var(--accent-dim);
-    stroke-width:1;
+    stroke-width:1.5;
   }
   .state-path.has-orgs { fill:var(--state-has-orgs); }
-  .state-path.has-orgs:hover { fill:var(--state-has-orgs-hover); stroke:var(--accent-dim); stroke-width:1; }
-  .state-path.active { fill:var(--state-active); stroke:var(--accent); stroke-width:1.2; }
-  .state-path.has-orgs.active { fill:#264858; stroke:var(--accent); stroke-width:1.2; }
+  .state-path.has-orgs:hover { fill:var(--state-has-orgs-hover); stroke:var(--accent-dim); stroke-width:1.5; }
+  .state-path.active { fill:var(--state-active); stroke:var(--accent); stroke-width:2; }
+  .state-path.has-orgs.active { fill:#264858; stroke:var(--accent); stroke-width:2; }
 
   .state-label {
     font-size:8px; font-weight:600; fill:var(--text-dim);
@@ -111,15 +112,6 @@
   }
 
   .map-pin-pulse { pointer-events:none; }
-
-  .map-legend {
-    display:flex; gap:24px; margin-top:16px; position:relative; z-index:2; flex-wrap:wrap;
-  }
-  .legend-item { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-secondary); }
-  .legend-dot { width:10px; height:10px; border-radius:50%; }
-  .legend-dot.has-orgs { background:#CC0000; }
-  .legend-dot.no-orgs { background:var(--state-fill); border:1px solid var(--state-stroke); }
-  .legend-dot.multi { background:#FF4400; }
 
   /* SIDEBAR */
   .sidebar { position:sticky; top:32px; }
@@ -213,7 +205,7 @@
 
   .header { margin-bottom:32px !important; }
   .header h1 {
-    font-size:clamp(40px,7vw,88px) !important; letter-spacing:8px;
+    font-size:clamp(36px,6vw,72px) !important; letter-spacing:6px;
     color:#E8E8E8; line-height:1 !important; text-transform:uppercase;
   }
   .header h1 em {
@@ -227,7 +219,7 @@
     border-bottom:2px solid #CC0000; display:inline-block; padding-bottom:4px;
   }
   .header p {
-    font-size:16px !important; font-weight:300 !important; color:#606060 !important;
+    font-size:16px !important; font-weight:300 !important; color:#808080 !important;
     letter-spacing:1px; text-transform:uppercase; max-width:600px !important;
   }
 
@@ -249,105 +241,81 @@
   }
 
   .map-container {
-    border:1px solid #222 !important; border-radius:0px !important;
-    box-shadow:none !important; background:#111111 !important;
-    position:relative;
+    background:#0E0E0E !important; border:1px solid #222 !important;
+    border-radius:0px !important;
+    box-shadow:0 0 80px rgba(204,0,0,0.05);
   }
-  .map-container::before {
-    background:radial-gradient(ellipse at 50% 50%, rgba(204,0,0,0.03) 0%, transparent 60%) !important;
+  .map-container::before { opacity:0.2 !important; }
+
+  .state-path {
+    fill:#151515 !important; stroke:#333 !important;
   }
-  .map-container::after {
-    content:''; position:absolute; top:0; left:0; right:0; height:3px;
-    background:linear-gradient(90deg, #CC0000 0%, #CC0000 30%, transparent 30%, transparent 33%, #CC0000 33%, #CC0000 35%, transparent 35%);
-    z-index:10;
+  .state-path.has-orgs { fill:#1A0B0B !important; }
+  .state-path:hover, .state-path.has-orgs:hover {
+    fill:#251010 !important; stroke:#CC0000 !important; stroke-width:2 !important;
+  }
+  .state-path.active, .state-path.has-orgs.active {
+    fill:#2A0E0E !important; stroke:#FF1A1A !important; stroke-width:2.5 !important;
+    filter:drop-shadow(0 0 6px rgba(204,0,0,0.4));
   }
 
-  .state-path { stroke:#2A2A2A !important; stroke-width:1 !important; }
-  .state-path:hover {
-    stroke:#CC0000 !important; stroke-width:1 !important;
-    filter:drop-shadow(0 0 4px rgba(204,0,0,0.3)) !important;
-  }
-  .state-path.active {
-    stroke:#CC0000 !important;
-    filter:drop-shadow(0 0 8px rgba(204,0,0,0.4)) !important;
-    fill:#201010 !important;
-  }
-  .state-path.has-orgs { fill:#181010 !important; }
-  .state-path.has-orgs:hover { fill:#221515 !important; }
-
-  .state-info-panel {
-    border:1px solid #222 !important; border-radius:0px !important;
-    background:#111 !important; position:relative; overflow:visible;
-  }
-  .state-info-panel::before {
-    content:''; position:absolute; top:-1px; left:0; width:40%; height:3px;
-    background:#CC0000; z-index:5;
-  }
-
-  .org-card {
-    border:1px solid #222 !important; border-radius:0px !important;
-    border-left:3px solid transparent !important;
-    background:#111 !important;
-  }
-  .org-card:hover {
-    border-left:3px solid #CC0000 !important; background:#141414 !important;
-    box-shadow:none; transform:translateX(4px) !important;
-  }
-  .org-card .org-name {
+  .state-label {
+    fill:#555 !important; font-weight:700 !important;
     font-family:'Barlow Condensed',sans-serif !important;
-    font-weight:700 !important; font-size:16px !important;
-    text-transform:uppercase; letter-spacing:1px;
+    text-transform:uppercase; letter-spacing:0.5px;
   }
-  .org-card .org-desc {
-    font-weight:300 !important; font-size:14px !important;
-    letter-spacing:0.3px; color:#787878 !important;
+
+  .sidebar-header h2 {
+    font-family:'Bebas Neue',sans-serif !important;
+    font-size:32px !important; letter-spacing:4px; text-transform:uppercase;
+    color:#E8E8E8;
+  }
+  .sidebar-header p {
+    color:#606060 !important; text-transform:uppercase; letter-spacing:2px;
+    font-size:11px !important; font-weight:500;
   }
 
   .search-box input {
-    border:1px solid #333 !important; border-radius:0px !important;
-    background:#0E0E0E !important; font-weight:500 !important;
-    letter-spacing:1px; text-transform:uppercase; font-size:13px !important;
-  }
-  .search-box input::placeholder { text-transform:uppercase; letter-spacing:2px; }
-  .search-box input:focus {
-    border-color:#CC0000 !important;
-    box-shadow:0 0 0 1px rgba(204,0,0,0.3) !important;
-  }
-  .search-box .search-icon { color:#CC0000 !important; }
-
-  .sidebar-header h2 {
-    font-family:'Bebas Neue',sans-serif !important; color:#E8E8E8 !important;
-    font-size:32px !important; letter-spacing:6px; text-transform:uppercase;
-  }
-  .sidebar-header p {
-    font-weight:400 !important; color:#505050 !important;
-    text-transform:uppercase; letter-spacing:2px; font-size:12px !important;
-  }
-
-  .org-count {
-    background:#CC0000 !important; color:#fff !important;
-    font-weight:700 !important; border-radius:0px !important;
-    font-size:12px !important; letter-spacing:2px;
+    background:#141414 !important; border:1px solid #222 !important;
+    border-radius:0px !important;
     font-family:'Barlow Condensed',sans-serif !important;
-    text-transform:uppercase;
+    text-transform:uppercase; letter-spacing:1px;
   }
+  .search-box input:focus { border-color:#CC0000 !important; }
 
-  .state-label { fill:#383838 !important; font-weight:700 !important; letter-spacing:1px; }
-
+  .state-info-panel {
+    background:#0E0E0E !important; border:1px solid #222 !important;
+    border-radius:0px !important;
+  }
   .state-title-bar {
-    border-bottom:1px solid #222 !important; padding:22px !important;
-    background:linear-gradient(90deg, rgba(204,0,0,0.04), transparent) !important;
+    border-bottom:1px solid #222 !important;
+    background:linear-gradient(90deg, rgba(204,0,0,0.06), transparent);
   }
   .state-title-bar h3 {
     font-family:'Bebas Neue',sans-serif !important;
-    font-size:24px !important; letter-spacing:4px; text-transform:uppercase;
+    font-size:20px !important; letter-spacing:3px; text-transform:uppercase;
+  }
+  .state-title-bar .org-count {
+    background:#CC0000 !important; color:#0A0A0A !important;
+    border-radius:0px !important;
+    font-family:'Barlow Condensed',sans-serif !important; font-weight:700;
+    letter-spacing:1px; font-size:11px !important;
   }
 
-  .legend-item {
-    font-weight:500 !important; font-size:12px !important; color:#606060 !important;
-    text-transform:uppercase; letter-spacing:1px;
+  .org-card {
+    background:#141414 !important; border:1px solid #222 !important;
+    border-radius:0px !important; border-left:2px solid #2A2A2A !important;
   }
-  .legend-dot.no-orgs { border-color:#333 !important; background:#1A1A1A !important; }
+  .org-card:hover {
+    background:#1A0B0B !important; border-color:#333 !important;
+    border-left-color:#CC0000 !important;
+  }
+  .org-card .org-name {
+    font-family:'Barlow Condensed',sans-serif !important; font-weight:700;
+    text-transform:uppercase; letter-spacing:1px; font-size:15px;
+  }
+  .org-card .org-desc { color:#808080 !important; }
+  .org-card .org-meta span { text-transform:uppercase; letter-spacing:0.5px; }
 
   .map-tooltip {
     background:#141414 !important; border:1px solid #333 !important;
@@ -375,7 +343,7 @@
 
   .org-list::-webkit-scrollbar-thumb { background:rgba(204,0,0,0.3) !important; border-radius:0 !important; }
 
-  /* NATIONAL RESOURCES RIBBON — edgy style */
+  /* NATIONAL RIBBON — edgy style */
   .national-resources {
     margin-bottom:16px; padding:14px; border-radius:0px;
     border:1px solid #222; background:#0E0E0E;
@@ -401,17 +369,20 @@
     font-family:'Barlow Condensed',sans-serif;
     background:#111;
   }
+  .nr-link.featured {
+    font-weight:800 !important;
+    color:#E8E8E8 !important;
+    border-left-color:#CC0000;
+    background:#141010;
+    letter-spacing:1.5px;
+  }
+  .nr-link.featured:hover { border-color:#CC0000; background:#1A0B0B; }
   .nr-link:last-child { margin-bottom:0; }
   .nr-link:hover { background:#141414; border-color:#333; border-left-color:#CC0000; color:#E8E8E8; }
   .nr-link svg { color:#404040; flex-shrink:0; transition:color 0.2s; }
   .nr-link:hover svg { color:#CC0000; }
+  .nr-link.featured svg { color:#CC0000; }
   .nr-name { flex:1; }
-  .nr-link-primary {
-    color:#FFFFFF;
-    font-weight:800;
-  }
-  .nr-link-primary svg { color:#FFFFFF; }
-  .nr-link-primary:hover { color:#FFFFFF; }
 
 </style>
 </head>
@@ -419,9 +390,9 @@
 
 <div class="app-container">
   <div class="header">
-    <div class="header-label">Interactive Directory</div>
-    <h1>United States <em>Organization</em> Map</h1>
-    <p>Explore groups and organizations across the country. Hover over any state to preview, click to see full details.</p>
+    <div class="header-label">Medical Liberty Directory</div>
+    <h1>United States <em>Medical Liberty</em> Map</h1>
+    <p>Proceeds go to support these organizations</p>
   </div>
 
   <div class="stats-bar">
@@ -433,11 +404,6 @@
   <div class="main-content">
     <div class="map-container">
       <svg id="mapSvg"></svg>
-      <div class="map-legend">
-        <div class="legend-item"><div class="legend-dot has-orgs"></div> Has organizations</div>
-        <div class="legend-item"><div class="legend-dot no-orgs"></div> No organizations listed</div>
-        <div class="legend-item"><div class="legend-dot multi"></div> 3+ organizations</div>
-      </div>
     </div>
 
     <div class="sidebar">
@@ -448,21 +414,21 @@
       <div class="national-resources" id="nationalResources">
         <div class="nr-label">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-          National Resources
+          National
         </div>
-        <a class="nr-link nr-link-primary" href="https://icandecide.org/" target="_blank">
-          <span class="nr-name">ICAN</span>
+        <a class="nr-link featured" href="https://icandecide.org" target="_blank" rel="noopener noreferrer">
+          <span class="nr-name">ICAN &mdash; Informed Consent Action Network</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </a>
-        <a class="nr-link" href="https://standforhealthfreedom.com/take-action/" target="_blank">
+        <a class="nr-link" href="https://standforhealthfreedom.com/take-action/" target="_blank" rel="noopener noreferrer">
           <span class="nr-name">Stand for Health Freedom</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </a>
-        <a class="nr-link" href="https://childrenshealthdefense.org/about-chapters/" target="_blank">
+        <a class="nr-link" href="https://childrenshealthdefense.org/about-chapters/" target="_blank" rel="noopener noreferrer">
           <span class="nr-name">Children's Health Defense</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </a>
-        <a class="nr-link" href="https://healthfreedomdefense.org/" target="_blank">
+        <a class="nr-link" href="https://healthfreedomdefense.org/" target="_blank" rel="noopener noreferrer">
           <span class="nr-name">Health Freedom Defense Fund</span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </a>
@@ -495,10 +461,10 @@
 </div>
 
 <script>
-// ===== FIPS to State Abbreviation mapping =====
+// ===== FIPS to State Abbreviation mapping (50 states, no DC) =====
 const fipsToAbbr = {
   "01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE",
-  "11":"DC","12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA",
+  "12":"FL","13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA",
   "20":"KS","21":"KY","22":"LA","23":"ME","24":"MD","25":"MA","26":"MI","27":"MN",
   "28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH","34":"NJ","35":"NM",
   "36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI",
@@ -508,7 +474,7 @@ const fipsToAbbr = {
 
 const stateNames = {
   "AL":"Alabama","AK":"Alaska","AZ":"Arizona","AR":"Arkansas","CA":"California",
-  "CO":"Colorado","CT":"Connecticut","DE":"Delaware","DC":"District of Columbia",
+  "CO":"Colorado","CT":"Connecticut","DE":"Delaware",
   "FL":"Florida","GA":"Georgia","HI":"Hawaii","ID":"Idaho","IL":"Illinois",
   "IN":"Indiana","IA":"Iowa","KS":"Kansas","KY":"Kentucky","LA":"Louisiana",
   "ME":"Maine","MD":"Maryland","MA":"Massachusetts","MI":"Michigan","MN":"Minnesota",
@@ -520,20 +486,14 @@ const stateNames = {
   "WA":"Washington","WV":"West Virginia","WI":"Wisconsin","WY":"Wyoming"
 };
 
-// ===== ORGANIZATION DATA =====
+// ===== ORGANIZATION DATA (source of truth: State Groups with Links doc) =====
 const orgData = {
   "AL": [
     { name: "Health Freedom Alabama", type: "advocacy", desc: "Statewide coalition advocating for health freedom in Alabama.", city: "Alabama", url: "https://www.healthfreedomalabama.com/" }
   ],
-  "AK": [
-    { name: "Alaskans for Health Freedom", type: "community", desc: "Community-led group focused on health choice awareness in Alaska.", city: "Anchorage", url: "#" }
-  ],
   "AZ": [
-    { name: "CHD AZ-Chapter", type: "nonprofit", desc: "Children's Health Defense Arizona Chapter — advocacy and awareness.", city: "Arizona", url: "https://az.childrenshealthdefense.org/" },
+    { name: "CHD AZ-Chapter", type: "nonprofit", desc: "Children's Health Defense Arizona Chapter \u2014 advocacy and awareness.", city: "Arizona", url: "https://az.childrenshealthdefense.org/" },
     { name: "AZ MAHA Coalition", type: "advocacy", desc: "Arizona Make America Healthy Again Coalition.", city: "Arizona", url: "https://www.azmaha.com/" }
-  ],
-  "AR": [
-    { name: "Arkansas Health Choice Network", type: "community", desc: "Community-driven network for health freedom in Arkansas.", city: "Little Rock", url: "#" }
   ],
   "CA": [
     { name: "A Voice for Choice Advocacy", type: "legal", desc: "Legal advocacy organization defending health choice rights in California.", city: "California", url: "https://avoiceforchoiceadvocacy.org/" },
@@ -545,21 +505,12 @@ const orgData = {
   "CT": [
     { name: "CT Residents Against Medical Mandates", type: "advocacy", desc: "Connecticut residents organized against medical mandates.", city: "Connecticut", url: "https://www.ctramm.com/" }
   ],
-  "DE": [
-    { name: "Delaware Families for Health Choice", type: "community", desc: "Community group advocating for informed consent in Delaware.", city: "Wilmington", url: "#" }
-  ],
-  "DC": [
-    { name: "DC Health Freedom Coalition", type: "advocacy", desc: "Advocacy group for health freedom in the nation's capital.", city: "Washington", url: "#" }
-  ],
   "FL": [
     { name: "CHD FL-Chapter", type: "nonprofit", desc: "Children's Health Defense Florida Chapter.", city: "Florida", url: "https://fl.childrenshealthdefense.org/" },
     { name: "Stand for Health Freedom Florida", type: "advocacy", desc: "Florida chapter of Stand for Health Freedom.", city: "Florida", url: "https://standforhealthfreedom.com/stand/florida/" }
   ],
   "GA": [
     { name: "Georgia Coalition for Vaccine Choice", type: "advocacy", desc: "Georgia coalition advocating for vaccine choice.", city: "Georgia", url: "https://www.gcvcadvocates.org" }
-  ],
-  "HI": [
-    { name: "Hawaii Health Freedom Coalition", type: "community", desc: "Island-wide health freedom support network.", city: "Honolulu", url: "#" }
   ],
   "ID": [
     { name: "Health Freedom Idaho", type: "advocacy", desc: "Idaho's leading health freedom advocacy group.", city: "Idaho", url: "https://healthfreedomidaho.com/" }
@@ -581,9 +532,6 @@ const orgData = {
   ],
   "LA": [
     { name: "Health Freedom Louisiana", type: "advocacy", desc: "Louisiana health freedom advocacy.", city: "Louisiana", url: "https://www.healthfreedomla.org/" }
-  ],
-  "ME": [
-    { name: "Maine Coalition for Vaccine Choice", type: "advocacy", desc: "Maine families advocating for vaccine choice.", city: "Portland", url: "#" }
   ],
   "MD": [
     { name: "Informed Choice Maryland", type: "advocacy", desc: "Advocacy for informed medical choice in Maryland.", city: "Maryland", url: "https://www.informedchoicemaryland.com/" },
@@ -608,9 +556,6 @@ const orgData = {
   "MT": [
     { name: "Montanans for Vaccine Choice", type: "community", desc: "Montana community for vaccine choice.", city: "Montana", url: "https://www.facebook.com/profile.php?id=100091520890913" }
   ],
-  "NE": [
-    { name: "Nebraskans for Health Freedom", type: "community", desc: "Nebraska health freedom community group.", city: "Nebraska", url: "#" }
-  ],
   "NV": [
     { name: "Health Freedom Nevada", type: "community", desc: "Health freedom community in Nevada.", city: "Nevada", url: "https://www.facebook.com/healthfnv" }
   ],
@@ -619,14 +564,6 @@ const orgData = {
   ],
   "NJ": [
     { name: "NJ/PHI PAC", type: "legal", desc: "New Jersey political action committee for health informed consent.", city: "New Jersey", url: "https://njphipac.org/" }
-  ],
-  "NM": [
-    { name: "New Mexico Health Freedom Alliance", type: "community", desc: "Community health freedom group in New Mexico.", city: "Albuquerque", url: "#" }
-  ],
-  "NY": [
-    { name: "NY Alliance for Vaccine Rights", type: "advocacy", desc: "New York State advocacy for medical freedom.", city: "Albany", url: "#" },
-    { name: "NYC Medical Freedom Coalition", type: "community", desc: "New York City community health freedom network.", city: "New York", url: "#" },
-    { name: "Empire State Health Freedom Research", type: "research", desc: "Independent health policy research center.", city: "Rochester", url: "#" }
   ],
   "NC": [
     { name: "HEAL NC", type: "advocacy", desc: "Health Education and Advocacy for Liberty in North Carolina.", city: "North Carolina", url: "https://www.healnc.net" }
@@ -638,16 +575,13 @@ const orgData = {
     { name: "Ohio Advocates for Medical Freedom", type: "advocacy", desc: "Ohio's premier medical freedom advocacy organization.", city: "Ohio", url: "https://www.ohioamf.org/" }
   ],
   "OK": [
-    { name: "MOHAPAC", type: "advocacy", desc: "Make Oklahomans Healthy Again — political action committee.", city: "Oklahoma", url: "https://mohapac.com" }
+    { name: "MOHAPAC", type: "advocacy", desc: "Make Oklahomans Healthy Again \u2014 political action committee.", city: "Oklahoma", url: "https://mohapac.com" }
   ],
   "OR": [
     { name: "Oregonians for Medical Freedom", type: "community", desc: "Oregon medical freedom group (currently inactive).", city: "Oregon", url: "#" }
   ],
   "PA": [
     { name: "Health Freedom PA", type: "advocacy", desc: "Pennsylvania health freedom advocacy.", city: "Pennsylvania", url: "https://healthfreedompa.com/" }
-  ],
-  "RI": [
-    { name: "Rhode Island Health Freedom", type: "community", desc: "Ocean State community for health choice.", city: "Providence", url: "#" }
   ],
   "SC": [
     { name: "Stand for Health Freedom SC", type: "advocacy", desc: "South Carolina chapter of Stand for Health Freedom.", city: "South Carolina", url: "https://standforhealthfreedom.com/stand/southcarolina/" }
@@ -700,11 +634,11 @@ const pathGenerator = d3.geoPath().projection(projection);
 d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json").then(function(us) {
   const states = topojson.feature(us, us.objects.states).features;
 
-  // Filter to only US states + DC (FIPS codes we have)
+  // Filter to only 50 US states (DC removed from fipsToAbbr)
   const validStates = states.filter(d => fipsToAbbr[d.id]);
 
   // Draw states
-  svg.selectAll(".state-path")
+  const statePaths = svg.selectAll(".state-path")
     .data(validStates)
     .enter()
     .append("path")
@@ -717,6 +651,9 @@ d3.json("https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json").then(function
     .attr("data-state", d => fipsToAbbr[d.id])
     .on("mouseenter", function(event, d) {
       const abbr = fipsToAbbr[d.id];
+      // [FIX] raise the hovered state to the top of the SVG so its full
+      // outline isn't clipped by adjacent states' paths
+      d3.select(this).raise();
       handleStateHover(abbr, event);
       if (activeState !== abbr) {
         d3.select(this).classed("active", true);
@@ -839,7 +776,7 @@ function hideTooltip() {
 function selectState(abbr) {
   svg.selectAll('.state-path').classed('active', false);
   activeState = abbr;
-  svg.selectAll(`.state-path[data-state="${abbr}"]`).classed('active', true);
+  svg.selectAll(`.state-path[data-state="${abbr}"]`).classed('active', true).raise();
   const orgs = orgData[abbr] || [];
   renderOrgList(stateNames[abbr] || abbr, orgs);
 }
@@ -850,7 +787,7 @@ function renderOrgList(name, orgs) {
   document.getElementById('orgCount').textContent = `${orgs.length} org${orgs.length !== 1 ? 's' : ''}`;
   const list = document.getElementById('orgList');
   if (!orgs.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#x1F4CD;</div><p><strong>No organizations listed</strong> for ${name} yet. Add your own data to the orgData object.</p></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">&#x1F4CD;</div><p><strong>No organizations listed</strong> for ${name} yet.</p></div>`;
     return;
   }
   list.innerHTML = orgs.map(o => `

@@ -17,7 +17,7 @@ export function OrganizationJsonLd() {
     name: 'ANTIVAXXER',
     url: process.env.NEXT_PUBLIC_SITE_URL || 'https://antivaxxer.com',
     description: 'Premium streetwear for the health freedom movement.',
-    logo: `${process.env.NEXT_PUBLIC_SITE_URL || ''}/images/logo.svg`,
+    logo: `${process.env.NEXT_PUBLIC_SITE_URL || ''}/images/logo.png`,
     sameAs: [
       'https://instagram.com/antivaxxer',
       'https://facebook.com/antivaxxer',

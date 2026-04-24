@@ -17,19 +17,14 @@ const nextConfig = {
     ],
   },
 
-  // Proxy unmatched /api/* to Express. `fallback` runs after App Router API routes
-  // so NextAuth (/api/auth/*) is not sent to Express (that caused session 404s).
+  // API rewrites — proxy /api calls to Express backend in development
   async rewrites() {
-    const destinationBase =
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-    return {
-      fallback: [
-        {
-          source: '/api/:path*',
-          destination: `${destinationBase}/:path*`,
-        },
-      ],
-    };
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}/:path*`,
+      },
+    ];
   },
 };
 

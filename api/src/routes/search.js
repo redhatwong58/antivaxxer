@@ -23,7 +23,6 @@ const searchQuery = z.object({
 router.get('/', validate(searchQuery, 'query'), async (req, res, next) => {
   try {
     const { q, limit } = req.query;
-    const term = `%${q}%`;
 
     const products = await prisma.product.findMany({
       where: {

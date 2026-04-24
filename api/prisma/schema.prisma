@@ -194,6 +194,12 @@ model Order {
   trackingUrl           String?   @map("tracking_url") @db.VarChar(500)
   shippedAt             DateTime? @map("shipped_at")
   deliveredAt           DateTime? @map("delivered_at")
+  // [AV-058] v5.4.0 — Shippo integration fields
+  shippoShipmentId      String?   @map("shippo_shipment_id") @db.VarChar(100)
+  shippoTransactionId   String?   @map("shippo_transaction_id") @db.VarChar(100)
+  carrier               String?   @db.VarChar(50)   // e.g. "usps", "ups", "fedex"
+  carrierService        String?   @map("carrier_service") @db.VarChar(100)  // e.g. "usps_priority"
+  labelUrl              String?   @map("label_url") @db.VarChar(500)
   notes                 String?   @db.Text
   userId                String?   @map("user_id")
   createdAt             DateTime  @default(now()) @map("created_at")
@@ -244,10 +250,18 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  // [AV-049] v5.3.5 — password reset
+  // resetTokenHash stores SHA-256 of the raw token; the raw token is
+  // emailed to the user and never stored. resetTokenExpiresAt is a
+  // 1-hour TTL on the link. Both clear after successful reset.
+  resetTokenHash      String?   @map("reset_token_hash") @db.VarChar(64)
+  resetTokenExpiresAt DateTime? @map("reset_token_expires_at")
+
   // Relations
   orders   Order[]
   Wishlist Wishlist[]
 
+  @@index([resetTokenHash])
   @@map("users")
 }
 
@@ -318,4 +332,28 @@ model AbandonedCart {
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   @@map("abandoned_carts")
+}
+
+// ============================================================
+// [AV-057] v5.3.9 — Failed webhook dead-letter queue
+// ============================================================
+// Stores webhook events that failed processing so ops can retry them
+// manually. Without this, webhook handler crashes silently dropped
+// customer orders into the void. See GAP_TRACKER.md for context.
+model FailedWebhook {
+  id           String    @id @default(uuid())
+  source       String    @db.VarChar(50)    // 'stripe', 'shippo', etc.
+  eventType    String    @map("event_type") @db.VarChar(100)
+  eventId      String    @map("event_id") @db.VarChar(255)
+  payload      Json      // full event payload so it can be replayed
+  errorMessage String    @map("error_message") @db.Text
+  retryCount   Int       @default(0) @map("retry_count")
+  resolved     Boolean   @default(false)
+  resolvedBy   String?   @map("resolved_by") @db.VarChar(255) // admin email
+  createdAt    DateTime  @default(now()) @map("created_at")
+  resolvedAt   DateTime? @map("resolved_at")
+
+  @@index([resolved, createdAt])
+  @@index([source, eventType])
+  @@map("failed_webhooks")
 }

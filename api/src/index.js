@@ -10,13 +10,14 @@
  * - morgan: request logging (no PII)
  */
 
-require('../loadEnv');
+require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const { errorHandler } = require('./middleware/errorHandler');
+const { requestId } = require('./middleware/requestId');
 const { apiLimiter } = require('./middleware/rateLimiter');
 
 const app = express();
@@ -39,6 +40,10 @@ ENV_CHECKS.forEach(({ key, required, label }) => {
     );
   }
 });
+
+// --- Request ID (must be first — all log statements reference req.id) ---
+// [AV-063] v5.4.4
+app.use(requestId);
 
 // --- Security Headers ---
 app.use(
@@ -76,7 +81,21 @@ app.use(
 // --- CORS ---
 app.use(
   cors({
-    origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+    origin: function (origin, callback) {
+      const allowed = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+      // Allow: configured origin, its www variant, no-origin (same-origin / server-to-server),
+      // and Amplify preview deployments (*.amplifyapp.com is AWS-owned, HTTPS only)
+      if (
+        !origin ||
+        origin === allowed ||
+        origin === allowed.replace('://', '://www.') ||
+        (origin.startsWith('https://') && origin.endsWith('.amplifyapp.com'))
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('CORS: origin not allowed'));
+      }
+    },
     credentials: true,
   })
 );
@@ -89,9 +108,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // --- Request Logging ---
-// Custom format: no PII, no auth tokens — per Logging Standards
+// [AV-063] v5.4.4 — includes req.id for tracing
+morgan.token('request-id', (req) => req.id || '-');
 app.use(
-  morgan(':method :url :status :res[content-length] - :response-time ms', {
+  morgan(':request-id :method :url :status :res[content-length] - :response-time ms', {
     skip: (req) => req.url === '/api/health',
   })
 );
@@ -133,8 +153,10 @@ const { adminAuth } = require('./middleware/adminAuth');
 const { adminLimiter, checkoutLimiter, registerLimiter } = require('./middleware/rateLimiter');
 app.use('/api/admin', adminLimiter, adminAuth, require('./routes/admin'));
 
-// Auth routes (rate limited) — Phase 3
-app.use('/api/auth', registerLimiter, require('./routes/auth'));
+// Auth routes — rate limiting + Turnstile applied per-route in auth.js
+// [WS-13] login: loginLimiter (10/15min), register: registerLimiter (5/hr),
+//         forgot-password: registerLimiter, reset-password: no limit (token is auth)
+app.use('/api/auth', require('./routes/auth'));
 
 // Account routes (user must be logged in) — Phase 3
 app.use('/api/account', require('./routes/account'));

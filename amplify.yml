@@ -8,10 +8,12 @@
 #
 # Environment variables are sourced from:
 #   - Plain text vars: Amplify Console → App settings → Environment variables
-#   - Secrets: Amplify Console references AWS Secrets Manager via SSM
-#     Required secrets:
+#     (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SITE_URL,
+#      NEXT_PUBLIC_TURNSTILE_SITE_KEY, NEXT_PUBLIC_GA4_ID, NEXT_PUBLIC_COOKIESYES_ID,
+#      NEXTAUTH_URL)
+#   - Secrets via SSM: Amplify Console references AWS Secrets Manager
+#     Required secret:
 #       - antivaxxer/prod/nextauth-secret  → NEXTAUTH_SECRET
-#       - antivaxxer/prod/stripe-publishable-key → NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 #
 # To rollback: delete this file. Amplify will fall back to auto-detected
 # Next.js settings, which work but lose Prisma generation.

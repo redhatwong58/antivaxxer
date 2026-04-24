@@ -10,12 +10,15 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import TurnstileWidget from '@/components/auth/TurnstileWidget';
 
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  // [AV-065] v5.4.6 — Turnstile token (empty until widget verifies)
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -31,6 +34,10 @@ export default function RegisterPage() {
       setError('Password must be at least 8 characters.');
       return;
     }
+    if (!turnstileToken) {
+      setError('Please complete the verification challenge.');
+      return;
+    }
 
     setLoading(true);
 
@@ -42,6 +49,7 @@ export default function RegisterPage() {
           name: form.name,
           email: form.email,
           password: form.password,
+          turnstileToken, // [AV-065] v5.4.6 — bot protection
         }),
       });
 
@@ -55,6 +63,7 @@ export default function RegisterPage() {
       const result = await signIn('credentials', {
         email: form.email,
         password: form.password,
+        turnstileToken, // pass the same token for the login that follows
         redirect: false,
       });
 
@@ -106,7 +115,9 @@ export default function RegisterPage() {
             <input type="password" value={form.confirm} onChange={(e) => update('confirm', e.target.value)} required
               className="w-full px-4 py-3 bg-av-gunmetal border border-av-bone-faint text-av-bone text-sm outline-none focus:border-av-red transition-colors" />
           </div>
-          <button type="submit" disabled={loading}
+          {/* [AV-065] v5.4.6 — Cloudflare Turnstile bot challenge */}
+          <TurnstileWidget onVerify={setTurnstileToken} />
+          <button type="submit" disabled={loading || !turnstileToken}
             className="w-full py-3 bg-av-red text-av-bone text-xs tracking-widest uppercase hover:bg-av-red-hover disabled:opacity-50 transition-colors">
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>

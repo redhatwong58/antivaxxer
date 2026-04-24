@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <LegalPage title="TERMS OF SERVICE" lastUpdated="April 2025">
+    <LegalPage title="TERMS OF SERVICE" lastUpdated="">
       <p>
         Welcome to ANTIVAXXER. By accessing or using our website at antivaxxer.com
         (the &ldquo;Site&rdquo;), you agree to be bound by these Terms of Service.

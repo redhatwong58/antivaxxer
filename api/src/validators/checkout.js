@@ -33,6 +33,8 @@ const createPaymentIntentBody = z.object({
   shippingAddress: addressSchema,
   billingAddress: addressSchema,
   sameAsShipping: z.boolean().optional().default(false),
+  // [AV-059] v5.4.0 — optional promo code
+  promoCode: z.string().max(50).optional().default(''),
 });
 
 module.exports = {

@@ -7,6 +7,6 @@
  */
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'dev-secret-change-me';
-const JWT_EXPIRES = '7d';
+const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
 
 module.exports = { JWT_SECRET, JWT_EXPIRES };

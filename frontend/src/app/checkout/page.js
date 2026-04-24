@@ -2,9 +2,13 @@
  * Checkout Page — ANTIVAXXER
  *
  * [AV-012] feat: checkout flow with stripe elements
+ * [AV-059] v5.4.0 — consumer flow fixes:
+ *   - Passes auth token if logged in (links order to user account)
+ *   - Promo code input with inline validation
+ *   - Passes orderNumber to confirmation page
  *
  * Multi-step checkout:
- * 1. Cart review (from CartContext)
+ * 1. Cart review + promo code (from CartContext)
  * 2. Shipping + billing address (with "same as shipping" checkbox)
  * 3. Payment via Stripe Elements
  *
@@ -15,6 +19,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCart } from '@/components/cart/CartContext';
@@ -108,6 +113,7 @@ function PaymentForm({ onSuccess, onError, processing, setProcessing }) {
 // ===== MAIN CHECKOUT PAGE =====
 export default function CheckoutPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { cart, cartTotal, cartCount, clearCart } = useCart();
 
   const [step, setStep] = useState(1); // 1: review, 2: address, 3: payment
@@ -123,8 +129,22 @@ export default function CheckoutPage() {
   const [serverTotals, setServerTotals] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState(null);
+  const [orderNumber, setOrderNumber] = useState(null);
+
+  // [AV-059] v5.4.0 — promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [promoResult, setPromoResult] = useState(null); // { valid, promo: { code, type, value, discountAmount, freeShipping } }
+  const [promoError, setPromoError] = useState(null);
+  const [validatingPromo, setValidatingPromo] = useState(false);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+
+  // Pre-fill email from session if logged in
+  useEffect(() => {
+    if (session?.user?.email && !email) {
+      setEmail(session.user.email);
+    }
+  }, [session, email]);
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -133,15 +153,60 @@ export default function CheckoutPage() {
     }
   }, [cart, step, router]);
 
+  // [AV-059] v5.4.0 — validate promo code
+  const validatePromoCode = async () => {
+    if (!promoCode.trim()) return;
+    setValidatingPromo(true);
+    setPromoError(null);
+    setPromoResult(null);
+    try {
+      // [WS-15] v5.6.0 — send auth header for per-user promo limit check
+      const promoHeaders = { 'Content-Type': 'application/json' };
+      if (session?.user?.apiToken) {
+        promoHeaders['Authorization'] = `Bearer ${session.user.apiToken}`;
+      }
+      const res = await fetch(`${API_URL}/promos/validate`, {
+        method: 'POST',
+        headers: promoHeaders,
+        body: JSON.stringify({
+          code: promoCode.trim(),
+          subtotal: cartTotal.toFixed(2),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPromoError(data?.error?.message || 'Invalid code');
+      } else {
+        setPromoResult(data);
+      }
+    } catch {
+      setPromoError('Could not validate code. Try again.');
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
+  const removePromo = () => {
+    setPromoCode('');
+    setPromoResult(null);
+    setPromoError(null);
+  };
+
   // Create PaymentIntent when moving to payment step
   const createPaymentIntent = async () => {
     setError(null);
     setProcessing(true);
 
     try {
+      // [AV-059] v5.4.0 — pass auth header if logged in (links order to user)
+      const headers = { 'Content-Type': 'application/json' };
+      if (session?.user?.apiToken) {
+        headers['Authorization'] = `Bearer ${session.user.apiToken}`;
+      }
+
       const res = await fetch(`${API_URL}/checkout/create-payment-intent`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           email,
           items: cart.map((item) => ({
@@ -151,6 +216,7 @@ export default function CheckoutPage() {
           shippingAddress,
           billingAddress: sameAsShipping ? shippingAddress : billingAddress,
           sameAsShipping,
+          promoCode: promoResult?.promo?.code || '', // [AV-059] — server re-validates
         }),
       });
 
@@ -165,6 +231,7 @@ export default function CheckoutPage() {
 
       setClientSecret(data.clientSecret);
       setServerTotals(data.totals);
+      setOrderNumber(data.orderNumber); // [AV-059]
       setStep(3);
     } catch (err) {
       setError(err.message);
@@ -173,10 +240,11 @@ export default function CheckoutPage() {
     }
   };
 
-  // Handle successful payment
+  // Handle successful payment — pass orderNumber to confirmation page
   const handlePaymentSuccess = (paymentIntentId) => {
     clearCart();
-    router.push(`/checkout/confirmation?pi=${paymentIntentId}`);
+    const on = orderNumber ? `&on=${encodeURIComponent(orderNumber)}` : '';
+    router.push(`/checkout/confirmation?pi=${paymentIntentId}${on}`);
   };
 
   // Validate address before proceeding
@@ -205,10 +273,16 @@ export default function CheckoutPage() {
   const OrderSummary = () => {
     const totals = serverTotals || {
       subtotal: cartTotal.toFixed(2),
-      shipping: cartTotal >= 75 ? '0.00' : '5.99',
-      shippingLabel: cartTotal >= 75 ? 'Free Shipping' : 'Standard Shipping',
+      discount: promoResult ? promoResult.promo.discountAmount : '0.00',
+      promoCode: promoResult?.promo?.code || null,
+      shipping: (promoResult?.promo?.freeShipping || cartTotal >= 75) ? '0.00' : '5.99',
+      shippingLabel: (promoResult?.promo?.freeShipping || cartTotal >= 75) ? 'Free Shipping' : 'Standard Shipping',
       tax: '0.00',
-      total: (cartTotal + (cartTotal >= 75 ? 0 : 5.99)).toFixed(2),
+      total: (
+        cartTotal -
+        (promoResult ? parseFloat(promoResult.promo.discountAmount) : 0) +
+        ((promoResult?.promo?.freeShipping || cartTotal >= 75) ? 0 : 5.99)
+      ).toFixed(2),
     };
 
     return (
@@ -227,8 +301,14 @@ export default function CheckoutPage() {
             <span>Subtotal</span>
             <span>${totals.subtotal}</span>
           </div>
+          {parseFloat(totals.discount) > 0 && (
+            <div className="flex justify-between text-green-400">
+              <span>Discount {totals.promoCode && `(${totals.promoCode})`}</span>
+              <span>-${totals.discount}</span>
+            </div>
+          )}
           <div className="flex justify-between text-av-bone-muted">
-            <span>{totals.shippingLabel}</span>
+            <span>{totals.shippingLabel || 'Shipping'}</span>
             <span>{totals.shipping === '0.00' ? 'FREE' : `$${totals.shipping}`}</span>
           </div>
           <div className="flex justify-between text-av-bone-muted">
@@ -299,6 +379,57 @@ export default function CheckoutPage() {
                     </div>
                   ))}
                 </div>
+
+                {/* [AV-059] v5.4.0 — Promo code input */}
+                <div className="mb-6 p-4 border border-av-bone-faint">
+                  <label className="block text-av-bone-muted text-[10px] tracking-widest uppercase mb-2">
+                    Promo Code
+                  </label>
+                  {promoResult ? (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-av-bone text-sm font-heading tracking-wider">{promoResult.promo.code}</span>
+                        <span className="text-green-400 text-xs ml-2">
+                          {promoResult.promo.type === 'percentage'
+                            ? `${promoResult.promo.value}% off`
+                            : promoResult.promo.type === 'fixed_amount'
+                            ? `$${Number(promoResult.promo.discountAmount).toFixed(2)} off`
+                            : 'Free shipping'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={removePromo}
+                        className="text-av-bone-muted text-[10px] tracking-widest uppercase hover:text-av-red"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={promoCode}
+                        onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(null); }}
+                        placeholder="Enter code"
+                        className="flex-1 px-3 py-2 bg-av-gunmetal border border-av-bone-faint text-av-bone
+                                   text-sm uppercase outline-none focus:border-av-red transition-colors"
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); validatePromoCode(); } }}
+                      />
+                      <button
+                        onClick={validatePromoCode}
+                        disabled={validatingPromo || !promoCode.trim()}
+                        className="px-4 py-2 bg-av-red text-av-bone text-[10px] tracking-widest uppercase
+                                   hover:bg-av-red-hover disabled:opacity-50 transition-colors"
+                      >
+                        {validatingPromo ? '...' : 'Apply'}
+                      </button>
+                    </div>
+                  )}
+                  {promoError && (
+                    <p className="text-red-400 text-xs mt-2">{promoError}</p>
+                  )}
+                </div>
+
                 <button
                   onClick={() => setStep(2)}
                   disabled={cart.length === 0}

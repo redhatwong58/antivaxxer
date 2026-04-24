@@ -7,7 +7,8 @@
  * Backdrop blur on scroll. Search + User + Cart icons.
  * Mobile hamburger menu.
  *
- * Logo: uses /images/logo-home.png if available, else styled text.
+ * Logo: uses /images/logo-nav.png if available (40px height), else styled text.
+ * To rollback: cp _rollback/v5.1.0/components/layout/Header.js frontend/src/components/layout/Header.js
  */
 
 'use client';
@@ -16,10 +17,12 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { useCart } from '@/components/cart/CartContext';
+import { useWishlist } from '@/components/wishlist/WishlistContext';
 
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { cartCount, openCart } = useCart();
+  const { wishlistCount } = useWishlist();
   const { data: session } = useSession();
 
   const navLinks = [
@@ -32,9 +35,9 @@ export default function Header() {
   return (
     <div className="sticky top-0 z-[99] bg-av-black/95 border-b border-av-bone-faint backdrop-blur-[20px]">
       <nav className="max-w-[1400px] mx-auto flex items-center justify-between px-6 md:px-10 py-4">
-        {/* Logo — replace public/images/logo-home.png for custom artwork */}
+        {/* Logo — swap /images/logo-nav.png for custom logo */}
         <Link href="/" className="hover:opacity-80 transition-opacity">
-          <img src="/images/logo-home.png" alt="ANTIVAXXER" className="h-12 md:h-14 w-auto object-contain"
+          <img src="/images/logo-nav.png" alt="ANTIVAXXER" className="h-8"
             onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='block'; }} />
           <span className="font-heading text-[26px] tracking-[4px]" style={{ display: 'none' }}>
             ANTIVA<span className="text-av-red">X</span>XER
@@ -61,6 +64,23 @@ export default function Header() {
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
+          </Link>
+
+          {/* Wishlist — [AV-046] v5.3.3 */}
+          <Link href="/account/wishlist" aria-label={`Wishlist, ${wishlistCount} items`}
+            className="w-9 h-9 flex items-center justify-center text-av-bone
+                       hover:scale-110 transition-transform relative">
+            <svg width="18" height="18" viewBox="0 0 24 24"
+                 fill={wishlistCount > 0 ? '#6A0E0E' : 'none'}
+                 stroke={wishlistCount > 0 ? '#6A0E0E' : 'currentColor'} strokeWidth="1.5">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            {wishlistCount > 0 && (
+              <span className="absolute -top-0.5 -right-1 bg-av-red text-white text-[10px]
+                               font-heading w-[18px] h-[18px] rounded-full flex items-center justify-center">
+                {wishlistCount}
+              </span>
+            )}
           </Link>
 
           {/* Account */}

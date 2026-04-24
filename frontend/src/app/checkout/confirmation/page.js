@@ -2,19 +2,24 @@
  * Order Confirmation Page — ANTIVAXXER
  *
  * [AV-013] feat: stripe webhook, order creation, inventory deduction
+ * [AV-059] v5.4.0 — consumer flow fix: shows order number (from URL param),
+ *   links to /account/orders if logged in, clearer messaging, "Create Account"
+ *   CTA for guest checkouts.
  *
  * Shown after successful Stripe payment.
- * Displays order confirmation while webhook processes in background.
  */
 
 'use client';
 
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
 function ConfirmationContent() {
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
+  const orderNumber = searchParams.get('on');
   const paymentIntentId = searchParams.get('pi');
 
   return (
@@ -33,33 +38,56 @@ function ConfirmationContent() {
           ORDER CONFIRMED
         </h1>
 
-        <p className="text-av-bone-muted text-sm font-light leading-relaxed mb-6">
-          Thank you for your order. You will receive a confirmation email shortly
-          with your order details and tracking information once your order ships.
+        {orderNumber && (
+          <p className="font-heading text-lg tracking-wider text-av-red mb-3">
+            {orderNumber}
+          </p>
+        )}
+
+        <p className="text-av-bone-muted text-sm font-light leading-relaxed mb-2">
+          Thank you for your order. A confirmation email with your order
+          details is on its way.
+        </p>
+        <p className="text-av-bone-muted text-xs font-light leading-relaxed mb-8">
+          You&apos;ll receive tracking information once your order ships.
         </p>
 
-        {paymentIntentId && (
-          <p className="text-av-bone-muted text-[10px] tracking-wider mb-8">
+        {paymentIntentId && !orderNumber && (
+          <p className="text-av-bone-muted text-[10px] tracking-wider mb-6">
             Reference: {paymentIntentId.substring(0, 20)}...
           </p>
         )}
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          {session?.user && (
+            <Link
+              href="/account/orders"
+              className="px-8 py-3 bg-av-red text-av-bone text-xs tracking-widest uppercase
+                         hover:bg-av-red-hover transition-colors"
+            >
+              View My Orders
+            </Link>
+          )}
           <Link
             href="/shop"
-            className="px-8 py-3 bg-av-red text-av-bone text-xs tracking-widest uppercase
-                       hover:bg-av-red-hover transition-colors"
+            className={`px-8 py-3 text-xs tracking-widest uppercase transition-colors ${
+              session?.user
+                ? 'border border-av-bone-dim text-av-bone-muted hover:border-av-bone hover:text-av-bone'
+                : 'bg-av-red text-av-bone hover:bg-av-red-hover'
+            }`}
           >
             Continue Shopping
           </Link>
-          <Link
-            href="/"
-            className="px-8 py-3 border border-av-bone-dim text-av-bone-muted text-xs
-                       tracking-widest uppercase hover:border-av-bone hover:text-av-bone
-                       transition-colors"
-          >
-            Home
-          </Link>
+          {!session?.user && (
+            <Link
+              href="/account/register"
+              className="px-8 py-3 border border-av-bone-dim text-av-bone-muted text-xs
+                         tracking-widest uppercase hover:border-av-bone hover:text-av-bone
+                         transition-colors"
+            >
+              Create Account
+            </Link>
+          )}
         </div>
       </div>
     </div>

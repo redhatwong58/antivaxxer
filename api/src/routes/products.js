@@ -24,8 +24,12 @@ router.get('/', validate(productListQuery, 'query'), async (req, res, next) => {
   try {
     const { category, status, featured, sort, limit, offset } = req.query;
 
-    // Build filter conditions
-    const where = { status };
+    // [AV-051] v5.3.7 — if no status filter, return all publicly-visible products
+    // (active + coming_soon + prelaunch). Admins can pass ?status=draft to view drafts.
+    const PUBLIC_STATUSES = ['active', 'coming_soon', 'prelaunch'];
+    const where = status
+      ? { status }
+      : { status: { in: PUBLIC_STATUSES } };
     if (category) {
       where.category = { slug: category };
     }
@@ -78,7 +82,8 @@ router.get('/', validate(productListQuery, 'query'), async (req, res, next) => {
               sizeId: true,
               sku: true,
               priceOverride: true,
-              // stockQty intentionally excluded from public API
+              // stockQty used server-side for inStock calc, NOT sent to client
+              stockQty: true,
               isActive: true,
             },
           },
@@ -104,7 +109,7 @@ router.get('/', validate(productListQuery, 'query'), async (req, res, next) => {
       sizes: product.sizes.map((ps) => ps.size),
       variantCount: product.variants.length,
       // Flag if any variant has stock (without revealing exact numbers)
-      inStock: product.variants.length > 0,
+      inStock: product.variants.some((v) => v.stockQty > 0),
     }));
 
     res.json({
@@ -206,6 +211,7 @@ router.get('/:slug', validate(productSlugParam, 'params'), async (req, res, next
         price: v.priceOverride ? Number(v.priceOverride) : Number(product.basePrice),
         // Expose availability boolean, not exact stock count
         available: v.isActive,
+        inStock: v.stockQty > 0,
       })),
     };
 

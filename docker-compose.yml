@@ -1,0 +1,75 @@
+# ANTIVAXXER — Local development services
+#
+# [AV-067] v5.4.8 — brings up Postgres + mock third-party services so
+# the entire stack runs offline. Each mock speaks the real third-party
+# API on a local port; production SDK calls work against them unchanged.
+#
+# Usage:
+#   docker compose up -d        # start all services
+#   docker compose down         # stop all services
+#   docker compose logs -f mailchimp-stub   # tail one service
+#
+# Then start the app with the dev env file:
+#   cd api && cp .env.dev.example .env && npm run dev
+#   cd frontend && npm run dev
+#
+# View captured emails: open http://localhost:8005 in a browser
+# View Stripe API logs: docker compose logs -f stripe-mock
+
+services:
+  # -------- PostgreSQL --------
+  # Standard local DB. Matches the schema Prisma migrations create.
+  postgres:
+    image: postgres:16-alpine
+    container_name: av-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: antivaxxer
+      POSTGRES_PASSWORD: antivaxxer
+      POSTGRES_DB: antivaxxer
+    volumes:
+      - av-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U antivaxxer"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # -------- stripe-mock (official Stripe Docker image) --------
+  # Speaks the real Stripe API on port 12111. The Stripe SDK in
+  # api/src/lib/stripe.js routes here when STRIPE_API_BASE is set.
+  # Behavior: every API call returns canned success responses based on
+  # the OpenAPI spec. Webhooks must be triggered manually (see
+  # `npm run mock:webhook` script in api/package.json).
+  stripe-mock:
+    image: stripe/stripe-mock:latest
+    container_name: av-stripe-mock
+    ports:
+      - "12111:12111"  # HTTP
+      - "12112:12112"  # HTTPS
+
+  # -------- aws-ses-v2-local --------
+  # Speaks the real SES v2 API on port 8005. The @aws-sdk/client-ses in
+  # api/src/services/email.js routes here when SES_ENDPOINT is set.
+  # Web UI at http://localhost:8005 shows captured emails with full HTML.
+  ses-local:
+    image: domdomegg/aws-ses-v2-local:latest
+    container_name: av-ses-local
+    ports:
+      - "8005:8005"
+
+  # -------- Mailchimp stub --------
+  # Tiny Express stub. Mailchimp doesn't ship an official local mock,
+  # so this returns canned success responses for the only endpoint we
+  # call: POST /3.0/lists/:id/members
+  mailchimp-stub:
+    build:
+      context: ./dev/mailchimp-stub
+      dockerfile: Dockerfile
+    container_name: av-mailchimp-stub
+    ports:
+      - "8081:8081"
+
+volumes:
+  av-postgres-data:

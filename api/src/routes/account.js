@@ -129,8 +129,6 @@ router.get('/orders/:id', async (req, res, next) => {
   }
 });
 
-module.exports = router;
-
 // ============================================================
 // WISHLIST — [AV-029]
 // ============================================================
@@ -196,3 +194,5 @@ router.delete('/wishlist/:productId', async (req, res, next) => {
     next(error);
   }
 });
+
+module.exports = router;

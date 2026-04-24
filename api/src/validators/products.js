@@ -11,6 +11,19 @@
 const { z } = require('zod');
 
 // Query params for GET /api/products
+//
+// [AV-051] v5.3.7 — added `coming_soon` and `prelaunch` to the status enum.
+//   These are PUBLICLY VISIBLE statuses (just not purchasable in the same way):
+//   - active     — normal product, full add-to-cart
+//   - coming_soon — visible on storefront, NO buy button, "Coming Soon" badge
+//   - prelaunch  — visible on storefront, "Pre-Order" CTA (still adds to cart)
+//   - draft      — admin-only, hidden from storefront
+//   - archived   — admin-only, hidden from storefront
+//
+//   The default behavior of GET /api/products is "show me what customers
+//   should see on the storefront", which is now active + coming_soon + prelaunch.
+//   Callers can still pass ?status=active to get only purchasable items, or
+//   ?status=draft to view drafts in admin contexts.
 const productListQuery = z.object({
   category: z
     .string()
@@ -18,9 +31,8 @@ const productListQuery = z.object({
     .optional()
     .transform((val) => val?.toLowerCase()),
   status: z
-    .enum(['active', 'draft', 'archived'])
-    .optional()
-    .default('active'),
+    .enum(['active', 'draft', 'archived', 'coming_soon', 'prelaunch'])
+    .optional(), // No default — route handler defaults to publicly visible array
   featured: z
     .enum(['true', 'false'])
     .optional()

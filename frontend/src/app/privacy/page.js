@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="PRIVACY POLICY" lastUpdated="April 2025">
+    <LegalPage title="PRIVACY POLICY" lastUpdated="">
       <p>
         ANTIVAXXER (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is
         committed to protecting your privacy. This Privacy Policy explains how we

@@ -9,7 +9,9 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { trackSearch } from '@/lib/analytics';
+import { api } from '@/lib/api';
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -17,21 +19,16 @@ function SearchContent() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
-
   const search = useCallback(async () => {
     if (!query.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setResults(data.products || []);
-        trackSearch(query, data.resultCount);
-      }
-    } catch { /* silent */ }
+      const data = await api.get(`/search?q=${encodeURIComponent(query)}`);
+      setResults(data.products || []);
+      trackSearch(query, data.resultCount);
+    } catch { /* silent — results stay empty */ }
     finally { setLoading(false); }
-  }, [API_URL, query]);
+  }, [query]);
 
   useEffect(() => { search(); }, [search]);
 
@@ -64,9 +61,9 @@ function SearchContent() {
             {results.map((product) => (
               <Link key={product.id} href={`/shop?product=${product.slug}`}
                 className="group border border-av-bone-faint hover:border-av-red transition-colors p-4">
-                <div className="aspect-square bg-av-gunmetal mb-3 flex items-center justify-center overflow-hidden">
+                <div className="aspect-square bg-av-gunmetal mb-3 flex items-center justify-center overflow-hidden relative">
                   {product.primaryImage ? (
-                    <img src={product.primaryImage} alt={product.name} className="w-full h-full object-cover" />
+                    <Image src={product.primaryImage} alt={product.name} fill className="object-cover" />
                   ) : (
                     <span className="font-heading text-2xl text-av-bone-dim">AV</span>
                   )}

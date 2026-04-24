@@ -1,6 +1,7 @@
 /**
  * FAQ Page — ANTIVAXXER
  * [AV-037] Rewritten: v5.2.0 — accordion with categories, size chart
+ * To rollback: cp _rollback/v5.1.0/app/faq/page.js frontend/src/app/faq/page.js
  */
 'use client';
 import { useState } from 'react';

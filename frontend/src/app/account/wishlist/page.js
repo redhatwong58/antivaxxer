@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function WishlistPage() {
   const { data: session, status } = useSession();
@@ -80,9 +81,9 @@ export default function WishlistPage() {
                   </svg>
                 </button>
                 <Link href={`/shop?product=${item.slug}`}>
-                  <div className="aspect-square bg-av-gunmetal mb-3 flex items-center justify-center overflow-hidden">
+                  <div className="aspect-square bg-av-gunmetal mb-3 flex items-center justify-center overflow-hidden relative">
                     {item.primaryImage ? (
-                      <img src={item.primaryImage} alt={item.name} className="w-full h-full object-cover" />
+                      <Image src={item.primaryImage} alt={item.name} fill className="object-cover" />
                     ) : (
                       <span className="font-heading text-2xl text-av-bone-dim">AV</span>
                     )}

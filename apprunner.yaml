@@ -62,6 +62,10 @@ run:
       value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/database-url"
     - name: NEXTAUTH_SECRET
       value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/nextauth-secret"
+    - name: JWT_SECRET
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/jwt-secret"
+    - name: JWT_EXPIRES
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/jwt-expires"
     - name: STRIPE_SECRET_KEY
       value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/stripe-secret-key"
     - name: STRIPE_WEBHOOK_SECRET
@@ -70,9 +74,17 @@ run:
       value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/cron-token"
     - name: SES_FROM_EMAIL
       value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/ses-from-email"
+    - name: INVENTORY_ALERT_EMAIL
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/inventory-alert-email"
     - name: S3_BUCKET_NAME
       value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/s3-bucket-name"
     - name: CLOUDFRONT_DOMAIN
       value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/cloudfront-domain"
-    - name: INVENTORY_ALERT_EMAIL
-      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/inventory-alert-email"
+    - name: NEXT_PUBLIC_SITE_URL
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/site-url"
+    - name: TURNSTILE_SECRET_KEY
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/turnstile-secret"
+    - name: SHIPPO_API_KEY
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/shippo-api-key"
+    - name: MAILCHIMP_API_KEY
+      value-from: "arn:aws:secretsmanager:us-east-1:ACCOUNT_ID:secret:antivaxxer/prod/mailchimp-api-key"

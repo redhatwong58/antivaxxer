@@ -1,6 +1,7 @@
 /**
  * Root Layout — ANTIVAXXER
  * [AV-037] Updated: v5.2.0 UI overhaul — added AnnouncementBar, SocialFloatBar, PromoPopup
+ * To rollback: cp _rollback/v5.1.0/app/layout.js frontend/src/app/layout.js
  */
 import '../styles/globals.css';
 import Script from 'next/script';
@@ -10,6 +11,7 @@ import { ToastProvider } from '@/components/ui/Toast';
 import { CartProvider } from '@/components/cart/CartContext';
 import CartDrawer from '@/components/cart/CartDrawer';
 import AuthProvider from '@/components/auth/AuthProvider';
+import { WishlistProvider } from '@/components/wishlist/WishlistContext';
 import { OrganizationJsonLd } from '@/components/seo/JsonLd';
 import { GoogleAnalytics } from '@/lib/analytics';
 import AnnouncementBar from '@/components/home/AnnouncementBar';
@@ -17,14 +19,14 @@ import SocialFloatBar from '@/components/home/SocialFloatBar';
 import PromoPopup from '@/components/home/PromoPopup';
 
 export const metadata = {
-  title: { default: 'ANTIVAXXER — Streetwear with a Statement', template: '%s | ANTIVAXXER' },
-  description: 'Premium streetwear for the health freedom movement. Comfort Colors, Carhartt, Columbia PFG, Vineyard Vines collaborations.',
+  title: { default: 'ANTIVAXXER — A Word Reclaimed', template: '%s | ANTIVAXXER' },
+  description: 'Premium apparel for the informed, the autonomous, the empowered. A word reclaimed by those who think and question.',
   openGraph: {
-    title: 'ANTIVAXXER — Streetwear with a Statement',
-    description: 'Premium streetwear for the health freedom movement.',
+    title: 'ANTIVAXXER — A Word Reclaimed',
+    description: 'Premium apparel for the informed, the autonomous, the empowered.',
     url: 'https://www.antivaxxer.com', siteName: 'ANTIVAXXER', type: 'website',
   },
-  twitter: { card: 'summary_large_image', title: 'ANTIVAXXER', description: 'Premium streetwear for the health freedom movement.' },
+  twitter: { card: 'summary_large_image', title: 'ANTIVAXXER', description: 'A word reclaimed. Premium apparel for free thinkers.' },
   robots: { index: true, follow: true },
 };
 
@@ -41,6 +43,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
         <ToastProvider>
           <CartProvider>
+            <WishlistProvider>
             <AnnouncementBar />
             <Header />
             <SocialFloatBar />
@@ -50,6 +53,7 @@ export default function RootLayout({ children }) {
             </main>
             <Footer />
             <CartDrawer />
+            </WishlistProvider>
           </CartProvider>
         </ToastProvider>
         </AuthProvider>

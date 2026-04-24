@@ -22,7 +22,7 @@ const createProductBody = z.object({
   description: z.string().max(5000).optional(),
   variantLabel: z.string().max(200).optional(),
   badge: z.enum(['BESTSELLER', 'NEW', 'HOT', 'COLLAB', '']).nullable().optional(),
-  status: z.enum(['active', 'draft', 'archived']).optional().default('draft'),
+  status: z.enum(['active', 'draft', 'archived', 'coming_soon', 'prelaunch']).optional().default('draft'),
   featured: z.boolean().optional().default(false),
   colorIds: z.array(z.string().uuid()).optional().default([]),
   sizeIds: z.array(z.string().uuid()).optional().default([]),

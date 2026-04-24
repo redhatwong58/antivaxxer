@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import TurnstileWidget from '@/components/auth/TurnstileWidget';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,15 +18,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  // [AV-065] v5.4.6
+  const [turnstileToken, setTurnstileToken] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!turnstileToken) {
+      setError('Please complete the verification challenge.');
+      return;
+    }
     setLoading(true);
     setError(null);
 
     const result = await signIn('credentials', {
       email,
       password,
+      turnstileToken, // [AV-065] forwarded by NextAuth authorize() to /api/auth/login
       redirect: false,
     });
 
@@ -77,15 +85,25 @@ export default function LoginPage() {
               className="w-full px-4 py-3 bg-av-gunmetal border border-av-bone-faint text-av-bone
                          text-sm outline-none focus:border-av-red transition-colors"
             />
+            <div className="text-right mt-1">
+              <Link
+                href="/account/forgot-password"
+                className="text-av-bone-muted text-[10px] tracking-wider uppercase hover:text-av-red transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !turnstileToken}
             className="w-full py-3 bg-av-red text-av-bone text-xs tracking-widest uppercase
                        hover:bg-av-red-hover disabled:opacity-50 transition-colors"
           >
             {loading ? 'Logging in...' : 'Log In'}
           </button>
+          {/* [AV-065] v5.4.6 — bot protection */}
+          <TurnstileWidget onVerify={setTurnstileToken} />
         </form>
 
         <p className="text-av-bone-muted text-xs tracking-wider text-center mt-6">

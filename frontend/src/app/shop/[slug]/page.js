@@ -14,22 +14,26 @@
  *   - JSON-LD Product + Breadcrumb structured data
  *   - Dynamic metadata (title, description, Open Graph)
  *
+ * To rollback: delete this file. ProductCard's Link will 404, but the
+ * Quick View button still works. Revert ProductCard to use the button-only
+ * version from v5.0.0.
  */
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/components/cart/CartContext';
 import { useToast } from '@/components/ui/Toast';
 import { trackViewItem, trackAddToCart } from '@/lib/analytics';
-import {
-  findVariantForSelection,
-  filterImagesBySelectedColor,
-} from '@/lib/productVariantUtils';
 // [AV-039] SEO structured data for product detail pages
 import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd';
+// [AV-046] v5.3.3 — wishlist
+import WishlistButton from '@/components/wishlist/WishlistButton';
+import WishlistPrompt from '@/components/wishlist/WishlistPrompt';
+import { api } from '@/lib/api';
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -42,15 +46,12 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+  const [showWishlistPrompt, setShowWishlistPrompt] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`${API_URL}/products/${params.slug}`);
-        if (!res.ok) throw new Error('Product not found');
-        const data = await res.json();
+        const data = await api.get(`/products/${params.slug}`);
         setProduct(data.product);
         setSelectedColor(data.product.colors?.[0] || null);
         setSelectedSize(data.product.sizes?.[0] || null);
@@ -67,23 +68,49 @@ export default function ProductDetailPage() {
       }
     };
     fetchProduct();
-  }, [API_URL, params.slug]);
+  }, [params.slug]);
 
-  const filteredImages = useMemo(
-    () => filterImagesBySelectedColor(product, selectedColor),
-    [product, selectedColor]
-  );
+  // [AV-036] Variant-specific image filtering.
+  // When a color is selected, show only images tagged with that colorId.
+  // Falls back to all images if no color-specific images exist.
+  // This filtering applies to both this page and the modal (see ProductModal.js).
+  const getFilteredImages = useCallback(() => {
+    if (!product?.images?.length) return [];
 
+    if (selectedColor) {
+      const colorImages = product.images.filter(
+        (img) => img.colorId === selectedColor.id
+      );
+      // Only filter if this color has specific images. Otherwise show all.
+      if (colorImages.length > 0) return colorImages;
+    }
+
+    return product.images;
+  }, [product, selectedColor]);
+
+  // Reset active image when filtered images change
   useEffect(() => {
     setActiveImageIndex(0);
   }, [selectedColor]);
 
+  // Find matching variant
+  const getSelectedVariant = useCallback(() => {
+    if (!product?.variants) return null;
+    return product.variants.find(
+      (v) =>
+        (v.color?.id === selectedColor?.id || (!v.color && !selectedColor)) &&
+        (v.size?.id === selectedSize?.id || (!v.size && !selectedSize))
+    );
+  }, [product, selectedColor, selectedSize]);
+
   const handleAddToCart = () => {
-    const variant = findVariantForSelection(product, selectedColor, selectedSize);
+    const variant = getSelectedVariant();
     if (!variant) {
       showToast('Please select a size and color', 'error');
       return;
     }
+
+    const filteredImages = getFilteredImages();
     const item = {
       variantId: variant.id,
       productId: product.id,
@@ -124,8 +151,9 @@ export default function ProductDetailPage() {
     );
   }
 
-  const selectedVariant = findVariantForSelection(product, selectedColor, selectedSize);
+  const selectedVariant = getSelectedVariant();
   const displayPrice = selectedVariant?.price || product.basePrice;
+  const filteredImages = getFilteredImages();
   const activeImage = filteredImages[activeImageIndex] || filteredImages[0];
 
   return (
@@ -187,7 +215,7 @@ export default function ProductDetailPage() {
                       ${activeImageIndex === i ? 'border-av-bone' : 'border-transparent hover:border-av-bone-dim'}`}
                     aria-label={`View image ${i + 1}`}
                   >
-                    <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <Image src={img.url} alt="" width={64} height={64} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -288,29 +316,67 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Availability */}
-            {selectedVariant && (
+            {/* Availability — hidden for coming_soon since there's no purchase */}
+            {selectedVariant && product.status !== 'coming_soon' && (
               <p className={`text-[10px] tracking-wider mb-4 ${
-                selectedVariant.stockQty > 0 ? 'text-green-400' : 'text-red-400'
+                selectedVariant.inStock ? 'text-green-400' : 'text-red-400'
               }`}>
-                {selectedVariant.stockQty > 0 ? 'In Stock' : 'Out of Stock'}
+                {product.status === 'prelaunch'
+                  ? 'Pre-Order — ships at launch'
+                  : selectedVariant.inStock ? 'In Stock' : 'Out of Stock'}
               </p>
             )}
 
-            {/* Add to Cart */}
-            <button
-              onClick={handleAddToCart}
-              disabled={selectedVariant && selectedVariant.stockQty <= 0}
-              className="w-full py-4 bg-av-red text-av-bone text-xs tracking-widest
-                         uppercase hover:bg-av-red-hover disabled:opacity-50
-                         disabled:cursor-not-allowed transition-colors duration-200"
-              aria-label={`Add ${product.name} to cart — $${displayPrice.toFixed(2)}`}
-            >
-              {selectedVariant?.stockQty <= 0 ? 'Out of Stock' : `Add to Cart — $${displayPrice.toFixed(2)}`}
-            </button>
+            {/* [AV-051] v5.3.7 — buy button branches by product status:
+                  coming_soon → no buy button at all, "Coming Soon" message instead
+                  prelaunch  → "Pre-Order" button (still adds to cart)
+                  active     → normal Add to Cart */}
+            <div className="flex gap-3">
+              {product.status === 'coming_soon' ? (
+                <div
+                  className="flex-1 py-4 bg-blue-900/30 border border-blue-700 text-center
+                             text-av-bone text-xs tracking-widest uppercase font-heading"
+                  aria-live="polite"
+                >
+                  Coming Soon
+                </div>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  disabled={selectedVariant && !selectedVariant.inStock}
+                  className="flex-1 py-4 bg-av-red text-av-bone text-xs tracking-widest
+                             uppercase hover:bg-av-red-hover disabled:opacity-50
+                             disabled:cursor-not-allowed transition-colors duration-200"
+                  aria-label={
+                    product.status === 'prelaunch'
+                      ? `Pre-order ${product.name} — $${displayPrice.toFixed(2)}`
+                      : `Add ${product.name} to cart — $${displayPrice.toFixed(2)}`
+                  }
+                >
+                  {product.status === 'prelaunch'
+                    ? `Pre-Order — $${displayPrice.toFixed(2)}`
+                    : !selectedVariant?.inStock
+                    ? 'Out of Stock'
+                    : `Add to Cart — $${displayPrice.toFixed(2)}`}
+                </button>
+              )}
+              {/* Wishlist heart — 56x56 to match button height; works for all statuses */}
+              <WishlistButton
+                productId={product.id}
+                size="lg"
+                onPromptShow={() => setShowWishlistPrompt(true)}
+                className="!w-14 !h-14"
+              />
+            </div>
           </div>
         </div>
       </div>
+
+      {/* [AV-046] Wishlist prompt */}
+      <WishlistPrompt
+        isOpen={showWishlistPrompt}
+        onClose={() => setShowWishlistPrompt(false)}
+      />
     </div>
   );
 }

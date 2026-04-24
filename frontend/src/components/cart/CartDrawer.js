@@ -1,10 +1,12 @@
 /**
  * Cart Drawer — ANTIVAXXER
  * [AV-037] Rewritten: v5.2.0 — 460px wide, qty controls, shipping line, branded styling
+ * To rollback: cp _rollback/v5.1.0/components/cart/CartDrawer.js frontend/src/components/cart/CartDrawer.js
  */
 'use client';
 import { useCart } from './CartContext';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function CartDrawer() {
   const { cart, isOpen, closeCart, removeItem, updateQty, cartTotal } = useCart();
@@ -49,7 +51,7 @@ export default function CartDrawer() {
                 {/* Image */}
                 <div className="w-20 h-20 bg-av-gunmetal flex-shrink-0 overflow-hidden">
                   {item.image ? (
-                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                    <Image src={item.image} alt={item.name} width={80} height={80} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <span className="font-heading text-xs text-av-bone-dim">AV</span>

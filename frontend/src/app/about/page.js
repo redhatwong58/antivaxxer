@@ -1,14 +1,20 @@
 /**
  * About Page — ANTIVAXXER
- * [AV-037] Rewritten: v5.2.0 — rich layout with value cards, section labels
+ * [AV-043] Rewritten: v5.3.1 — repositioned around informed/knowledgeable/empowered
+ *   Removed "streetwear with a statement" language
+ *   Added Option F: dictionary definition editorial as hero moment
+ * To rollback: cp _rollback/v5.1.0/app/about/page.js frontend/src/app/about/page.js
  */
-export const metadata = { title: 'About', description: 'The movement behind the brand.' };
+export const metadata = {
+  title: 'About',
+  description: 'A word reclaimed. ANTIVAXXER is about being informed, knowledgeable, and empowered to make your own choices.',
+};
 
 const values = [
-  { num: '01', title: 'PREMIUM QUALITY', text: 'Comfort Colors, Carhartt, Columbia, Vineyard Vines. Only the best blanks.' },
-  { num: '02', title: 'FREE EXPRESSION', text: 'Wear your convictions. Spark conversations. No apologies.' },
-  { num: '03', title: 'COMMUNITY', text: 'Part of a growing movement of free thinkers across all 50 states.' },
-  { num: '04', title: 'TRANSPARENCY', text: 'No hidden agendas. No corporate sponsors. Just truth in cotton.' },
+  { num: '01', title: 'INFORMED', text: 'Read the studies. Read the inserts. Read the dissenting opinions. Knowledge is the foundation of every real choice.' },
+  { num: '02', title: 'AUTONOMOUS', text: 'Your body. Your decision. No pressure, no coercion, no shame. Medical freedom is a human right, not a privilege.' },
+  { num: '03', title: 'EMPOWERED', text: 'Ask questions. Demand answers. Refuse the trade of comfort for compliance. Empowerment starts with thinking for yourself.' },
+  { num: '04', title: 'UNAFRAID', text: 'The word was weaponized. We reclaimed it. Wearing it is a quiet kind of courage — and the start of the conversation.' },
 ];
 
 export default function AboutPage() {
@@ -20,51 +26,76 @@ export default function AboutPage() {
           ANTIVAXXER
         </span>
         <h1 className="font-heading text-[clamp(48px,7vw,96px)] tracking-[8px] relative">
-          THE MOVEMENT
+          A WORD RECLAIMED
         </h1>
       </section>
 
+      {/* [AV-043] Option F: Dictionary definition editorial — the brand thesis */}
+      <section className="max-w-[900px] mx-auto px-10 pb-20">
+        <div className="border border-av-bone-faint p-12 md:p-16">
+          <p className="font-serif italic text-4xl md:text-5xl text-av-bone mb-2" style={{fontFamily: 'Georgia, serif'}}>
+            antivaxxer
+          </p>
+          <p className="text-av-bone-muted text-sm mb-5">[noun, verb]</p>
+          <div className="w-full h-px bg-av-bone-faint mb-6" />
+          <p className="text-av-bone text-lg md:text-xl font-light leading-relaxed mb-3">
+            A person who thinks and questions.
+          </p>
+          <p className="text-av-bone text-lg md:text-xl font-light leading-relaxed mb-3">
+            A state of mind rooted in autonomy, awareness, and choice.
+          </p>
+          <p className="text-av-bone-muted text-sm italic mt-6">
+            Origin: Reclaimed from a slur. Redefined by those who wear it.
+          </p>
+        </div>
+      </section>
+
+      {/* Mission */}
       <div className="max-w-[800px] mx-auto px-10 pb-24">
-        {/* Mission */}
         <div className="mb-20">
           <div className="flex items-center gap-4 mb-6">
-            <span className="font-heading text-sm tracking-[4px] text-av-red">OUR MISSION</span>
+            <span className="font-heading text-sm tracking-[4px] text-av-red">WHAT WE STAND FOR</span>
             <div className="flex-1 h-px bg-av-bone-faint" />
           </div>
           <h3 className="font-heading text-4xl tracking-[3px] leading-tight mb-5">
-            STREETWEAR WITH<br />A STATEMENT
+            INFORMATION IS<br />THE ANTIDOTE
           </h3>
           <p className="font-light text-[15px] text-av-bone-muted leading-[1.9] mb-4">
-            ANTIVAXXER is premium streetwear for the health freedom movement. We don&apos;t do cheap
-            blanks or screen-printed slogans. Every piece is built on <strong className="text-av-bone font-medium">trusted
-            brand foundations</strong> — Comfort Colors garment-dyed cotton, Carhartt workwear, Columbia PFG
-            performance fabrics, and Vineyard Vines lifestyle pieces.
+            ANTIVAXXER isn&apos;t about being against anything. It&apos;s about being <strong className="text-av-bone font-medium">for
+            something</strong> — the right to think critically, ask hard questions, and make decisions based on
+            your own research and your own values.
           </p>
           <p className="font-light text-[15px] text-av-bone-muted leading-[1.9]">
-            We partner with brands people already trust, then add designs that spark
-            conversation. Not political. Not partisan. Just freedom.
+            The word was used as a label to silence people. Now it&apos;s a label we wear with pride.
+            Because the people who earned that label were usually the ones doing the reading, the
+            questioning, and the thinking.
           </p>
         </div>
 
-        {/* Quality */}
+        {/* Knowledge */}
         <div className="mb-20">
           <div className="flex items-center gap-4 mb-6">
-            <span className="font-heading text-sm tracking-[4px] text-av-red">QUALITY</span>
+            <span className="font-heading text-sm tracking-[4px] text-av-red">KNOWLEDGE</span>
             <div className="flex-1 h-px bg-av-bone-faint" />
           </div>
           <h3 className="font-heading text-4xl tracking-[3px] leading-tight mb-5">
-            BUILT TO LAST
+            READ. QUESTION.<br />DECIDE FOR YOURSELF.
           </h3>
+          <p className="font-light text-[15px] text-av-bone-muted leading-[1.9] mb-4">
+            We&apos;re not here to tell you what to believe. We&apos;re here to support the people who do
+            their own homework. The ones who read the studies instead of the headlines. The ones
+            who ask questions even when it&apos;s uncomfortable.
+          </p>
           <p className="font-light text-[15px] text-av-bone-muted leading-[1.9]">
-            6.1 oz heavyweight ring-spun cotton. Garment-dyed for that lived-in softness from day one.
-            OEKO-TEX Standard 100 certified. Embroidered logos that don&apos;t crack, peel, or fade. Every
-            product is designed to be the shirt you reach for first.
+            Visit our <a href="/resources" className="text-av-red hover:underline">Resources page</a> for
+            health freedom organizations, research databases, and legal advocacy groups. Free thinkers
+            across all 50 states, working together.
           </p>
         </div>
 
         {/* Values grid */}
         <div className="flex items-center gap-4 mb-6">
-          <span className="font-heading text-sm tracking-[4px] text-av-red">OUR VALUES</span>
+          <span className="font-heading text-sm tracking-[4px] text-av-red">OUR PRINCIPLES</span>
           <div className="flex-1 h-px bg-av-bone-faint" />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

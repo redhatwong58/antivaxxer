@@ -34,8 +34,12 @@ router.post('/subscribe', validate(subscribeBody, 'body'), async (req, res, next
       return res.json({ subscribed: true, message: 'Thank you for subscribing!' });
     }
 
+    // [AV-067] v5.4.8 — MAILCHIMP_BASE_URL routes to a local stub for offline dev
+    const baseUrl = process.env.MAILCHIMP_BASE_URL
+      || `https://${serverPrefix}.api.mailchimp.com`;
+
     const response = await fetch(
-      `https://${serverPrefix}.api.mailchimp.com/3.0/lists/${listId}/members`,
+      `${baseUrl}/3.0/lists/${listId}/members`,
       {
         method: 'POST',
         headers: {
@@ -72,8 +76,13 @@ router.post('/subscribe', validate(subscribeBody, 'body'), async (req, res, next
     throw new Error(data.detail || 'Mailchimp subscription failed');
   } catch (error) {
     console.error('[NEWSLETTER] Mailchimp error:', error.message);
-    // Don't expose Mailchimp errors to the client
-    res.json({ subscribed: true, message: 'Thank you for subscribing!' });
+    // [AV-061] v5.4.2 — DON'T lie to the user. If Mailchimp fails, tell them
+    // so they can retry. The old code returned { subscribed: true } on error,
+    // meaning users thought they were on the list when they weren't.
+    res.status(502).json({
+      subscribed: false,
+      message: 'We\'re having trouble subscribing you right now. Please try again in a moment.',
+    });
   }
 });
 

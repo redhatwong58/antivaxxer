@@ -331,9 +331,11 @@ export default function ProductEditorPage() {
                 className="w-full px-3 py-2 bg-av-gunmetal border border-av-bone-faint text-av-bone
                            text-sm outline-none focus:border-av-red transition-colors"
               >
-                <option value="draft">Draft</option>
+                <option value="draft">Draft (hidden)</option>
                 <option value="active">Active</option>
-                <option value="archived">Archived</option>
+                <option value="coming_soon">Coming Soon (visible, no buy)</option>
+                <option value="prelaunch">Pre-Launch (visible, pre-order)</option>
+                <option value="archived">Archived (hidden)</option>
               </select>
             </div>
             <div className="flex items-center gap-2 pt-5">

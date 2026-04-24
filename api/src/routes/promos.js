@@ -2,6 +2,7 @@
  * Promo Routes — Code Validation + Admin CRUD
  *
  * [AV-020] feat: promo code engine
+ * [WS-15] v5.6.0 — userId extracted from JWT instead of request body
  *
  * Public:
  *   POST /api/promos/validate — Validate a promo code and return discount
@@ -14,14 +15,31 @@
 
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const { prisma } = require('../lib/prisma');
+const { JWT_SECRET } = require('../lib/jwt');
+
+// [WS-15] Extract userId from JWT if present — same pattern as checkout.js
+// Duplicated here rather than shared to avoid modifying the checkout critical path.
+function extractOptionalUserId(req) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) return null;
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded?.userId || null;
+  } catch {
+    return null;
+  }
+}
 
 // ===== POST /api/promos/validate =====
 // Public endpoint — validates a code and returns the discount type/value.
 // Does NOT apply the discount — that happens in checkout.
 router.post('/validate', async (req, res, next) => {
   try {
-    const { code, subtotal, userId } = req.body;
+    const { code, subtotal } = req.body;
+    const userId = extractOptionalUserId(req);
 
     if (!code) {
       return res.status(400).json({

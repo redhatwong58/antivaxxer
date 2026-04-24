@@ -20,17 +20,31 @@ export default function PromoPopup() {
   }, []);
 
   const close = () => { setVisible(false); sessionStorage.setItem('av_promo_seen', '1'); };
+  // [AV-061] v5.4.2 — honesty fix: check res.ok before showing success
+  const [submitError, setSubmitError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) return;
+    setSubmitError(null);
+    setSubmitting(true);
     try {
-      await fetch(`${API_URL}/newsletter/subscribe`, {
+      const res = await fetch(`${API_URL}/newsletter/subscribe`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
-    } catch { /* silent */ }
-    setSubmitted(true);
-    setTimeout(close, 2000);
+      const data = await res.json();
+      if (res.ok && data.subscribed) {
+        setSubmitted(true);
+        setTimeout(close, 2000);
+      } else {
+        setSubmitError(data.message || 'Something went wrong. Try again.');
+      }
+    } catch {
+      setSubmitError('Connection issue. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (!visible) return null;
@@ -55,17 +69,24 @@ export default function PromoPopup() {
         {submitted ? (
           <p className="text-av-red font-heading text-lg tracking-wider">Welcome to the movement.</p>
         ) : (
-          <form onSubmit={handleSubmit} className="flex max-w-[380px] mx-auto mb-4">
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email" required
-              className="flex-1 px-4 py-3.5 bg-transparent border border-av-bone-dim text-av-bone
-                         text-sm font-light outline-none focus:border-av-red placeholder:text-av-bone-muted" />
-            <button type="submit"
-              className="px-6 py-3.5 bg-av-red border border-av-red text-av-bone font-heading
-                         text-sm tracking-[3px] cursor-pointer hover:bg-av-red-hover transition-colors">
-              GET CODE
-            </button>
-          </form>
+          <div>
+            <form onSubmit={handleSubmit} className="flex max-w-[380px] mx-auto mb-2">
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email" required disabled={submitting}
+                className="flex-1 px-4 py-3.5 bg-transparent border border-av-bone-dim text-av-bone
+                           text-sm font-light outline-none focus:border-av-red placeholder:text-av-bone-muted
+                           disabled:opacity-50" />
+              <button type="submit" disabled={submitting}
+                className="px-6 py-3.5 bg-av-red border border-av-red text-av-bone font-heading
+                           text-sm tracking-[3px] cursor-pointer hover:bg-av-red-hover transition-colors
+                           disabled:opacity-50">
+                {submitting ? '...' : 'GET CODE'}
+              </button>
+            </form>
+            {submitError && (
+              <p className="text-red-400 text-[11px] text-center mb-2">{submitError}</p>
+            )}
+          </div>
         )}
         <p className="text-[11px] text-av-bone-muted font-light">No spam. Unsubscribe anytime.</p>
       </div>

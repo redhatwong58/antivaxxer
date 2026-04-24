@@ -11,23 +11,21 @@
 import { useState, useCallback } from 'react';
 import ProductGrid from '@/components/product/ProductGrid';
 import ProductModal from '@/components/product/ProductModal';
+import { api } from '@/lib/api';
 
 export default function ShopPage() {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
-
   const handleSelectProduct = useCallback(async (product) => {
     try {
-      const res = await fetch(`${API_URL}/products/${product.slug}`);
-      const data = await res.json();
+      const data = await api.get(`/products/${product.slug}`);
       if (data.product) {
         setSelectedProduct(data.product);
       }
     } catch {
       setSelectedProduct(product);
     }
-  }, [API_URL]);
+  }, []);
 
   return (
     <div className="min-h-screen">

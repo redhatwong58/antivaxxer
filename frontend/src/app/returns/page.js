@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function ReturnsPage() {
   return (
-    <LegalPage title="RETURN & REFUND POLICY" lastUpdated="April 2025">
+    <LegalPage title="RETURN & REFUND POLICY" lastUpdated="">
       <p>
         We want you to be completely satisfied with your ANTIVAXXER purchase.
         If you are not satisfied, we accept returns within the guidelines below.

@@ -7,7 +7,7 @@ export const metadata = {
 
 export default function ShippingPolicyPage() {
   return (
-    <LegalPage title="SHIPPING POLICY" lastUpdated="April 2025">
+    <LegalPage title="SHIPPING POLICY" lastUpdated="">
       <h2>DOMESTIC SHIPPING</h2>
       <p>
         We currently ship within the <strong>United States</strong> only.
